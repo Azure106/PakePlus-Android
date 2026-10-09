@@ -1,0 +1,2480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>游戏日常打卡</title>
+<style>
+:root{
+  --bg:#f5f5f7; --card:#fff; --text:#1c1c1e; --sub:#8e8e93;
+  --line:#e5e5ea; --accent:#3b82f6; --done:#34c759; --danger:#ff3b30;
+  --radius:12px; --gap:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);font-size:15px;
+  padding-top:calc(52px + env(safe-area-inset-top));
+  padding-bottom:calc(60px + env(safe-area-inset-bottom));
+  overflow-x:hidden;
+}
+#accountBar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding-top:env(safe-area-inset-top);
+  background:var(--card);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;height:calc(52px + env(safe-area-inset-top));
+  overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;
+}
+#accountBar::-webkit-scrollbar{display:none}
+.acc-tab{
+  flex:0 0 auto;padding:6px 14px;margin:0 4px;border-radius:20px;
+  background:var(--bg);font-size:13px;color:var(--sub);cursor:pointer;
+  border:1px solid transparent;transition:.2s;user-select:none;
+  display:flex;align-items:center;gap:4px;
+}
+.acc-tab:first-child{margin-left:12px}
+.acc-tab.active{background:var(--accent);color:#fff;font-weight:600}
+.acc-tab .del{font-size:14px;color:rgba(0,0,0,.35);padding:0 2px;line-height:1;}
+.acc-tab.active .del{color:rgba(255,255,255,.7)}
+.acc-add{
+  flex:0 0 auto;width:30px;height:30px;border-radius:50%;
+  background:var(--accent);color:#fff;border:none;font-size:20px;
+  line-height:1;margin-right:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.page{display:none;padding:12px}
+.page.active{display:block}
+.section{background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:var(--gap);}
+.section-title{font-size:15px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.section-title .hint{font-size:11px;color:var(--sub);font-weight:400;}
+.res-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.res-item{text-align:center;padding:10px 4px;background:var(--bg);border-radius:10px;cursor:pointer;user-select:none;}
+.res-icon{font-size:24px;height:30px;display:flex;align-items:center;justify-content:center;}
+.res-name{font-weight:600;font-size:13px;margin-bottom:4px;}
+.res-val{font-size:16px;font-weight:700;color:var(--accent);}
+.res-val .add{font-size:11px;color:#34c759;margin-left:2px;font-weight:400;}
+.res-sub{font-size:10px;color:var(--sub);margin-top:2px;}
+.stat-row{display:flex;justify-content:space-between;font-size:13px;line-height:1.9;}
+.stat-row .num{font-weight:600;color:var(--accent);}
+.task{display:flex;align-items:center;gap:10px;padding:12px 10px;border-bottom:1px solid var(--line);}
+.task:last-child{border-bottom:none}
+.task .check{flex:0 0 22px;width:22px;height:22px;border-radius:6px;border:2px solid var(--line);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.task.done .check{background:var(--done);border-color:var(--done);}
+.task.done .check::after{content:"✓";color:#fff;font-size:14px;font-weight:700;}
+.task .name{flex:1;font-size:14px;cursor:pointer;}
+.task.done .name{text-decoration:line-through;color:var(--sub);}
+.task .num{width:48px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:4px;font-size:13px;background:#fff;}
+.task .del-btn{color:var(--sub);font-size:18px;padding:0 4px;cursor:pointer;background:none;border:none;}
+.reward-tag{font-size:13px;color:#3b82f6;padding:3px 6px;border:1px dashed #3b82f6;border-radius:4px;cursor:pointer;}
+.add-btn{width:100%;padding:10px;margin-top:8px;background:var(--bg);border:1px dashed var(--line);border-radius:10px;color:var(--sub);font-size:20px;cursor:pointer;}
+#tabBar{position:fixed;left:0;right:0;bottom:0;z-index:100;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);height:calc(60px + env(safe-area-inset-bottom));}
+#tabBar button{flex:1;background:none;border:none;font-size:12px;color:var(--sub);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;}
+#tabBar button.active{color:var(--accent);font-weight:600;}
+#tabBar .icon{font-size:20px;line-height:1;}
+.btn{padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;cursor:pointer;}
+.btn.ghost{background:var(--bg);color:var(--text);border:1px solid var(--line);}
+.btn.danger{background:var(--danger);}
+.empty{color:var(--sub);text-align:center;padding:20px;font-size:13px;}
+.notice{font-size:11px;color:#ff9500;font-weight:600;margin-left:5px;}
+/* 周常子Tab */
+.wt-subtab{flex:1;padding:8px;border:none;background:none;font-size:14px;color:var(--sub);cursor:pointer;border-radius:8px;}
+.wt-subtab.active{background:#fff;color:var(--accent);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+/* 周常选项 */
+.wt-options{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.wt-option{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;background:var(--bg);border-radius:8px;font-size:13px;user-select:none;}
+.wt-option.done{text-decoration:line-through;color:var(--sub);background:#f0fdf4;}
+.wt-option .wt-box{width:16px;height:16px;border-radius:4px;border:2px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;cursor:pointer;}
+.wt-option.done .wt-box{background:var(--done);border-color:var(--done);color:#fff;}
+/* 子项目卡 */
+.wt-subcard{margin-top:10px;padding:10px;background:#fafafa;border-radius:10px;border:1px solid var(--line);}
+.wt-subcard-head{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:6px;}
+/* 商店购买 */
+.wt-shop-item{padding:12px 0;border-bottom:1px solid var(--line);}
+.wt-shop-item:last-child{border-bottom:none;}
+.wt-shop-rewards{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.wt-reward-block{display:inline-flex;align-items:center;background:var(--bg);border-radius:8px;padding:4px;gap:2px;}
+.wt-reward-block input{width:44px;text-align:center;border:none;background:#fff;border-radius:6px;padding:4px;font-size:13px;}
+.wt-reward-block .r-icon{font-size:13px;color:#3b82f6;padding:4px 6px;cursor:pointer;user-select:none;}
+.wt-reward-block .r-del{color:var(--sub);font-size:14px;padding:2px 4px;cursor:pointer;background:none;border:none;}
+/* 活动日历 */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:10px;}
+.cal-head{text-align:center;font-size:11px;color:var(--sub);padding:4px 0;}
+.cal-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;font-size:12px;position:relative;cursor:pointer;}
+.cal-cell.empty-cell{background:transparent;}
+.cal-cell.has-event{background:#e0f2fe;}
+.cal-day{font-weight:500;}
+.cal-dot{width:5px;height:5px;border-radius:50%;position:absolute;bottom:3px;}
+.act-item{padding:10px 0;border-bottom:1px solid var(--line);}
+.act-item:last-child{border-bottom:none;}
+.act-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.act-name{font-size:14px;font-weight:600;cursor:pointer;}
+.act-dates{font-size:11px;color:var(--sub);margin-bottom:6px;}
+.act-dates input[type=date]{border:1px solid var(--line);border-radius:6px;padding:2px 4px;font-size:12px;background:#fff;}
+.act-rewards{display:flex;flex-wrap:wrap;gap:6px;}
+.toggle-more{text-align:center;font-size:12px;color:var(--accent);padding:8px 0;cursor:pointer;}
+/* 设置页 */
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);}
+.set-row:last-child{border-bottom:none;}
+.set-label{font-size:14px;}
+.set-sub{font-size:11px;color:var(--sub);margin-top:2px;}
+.set-input{width:80px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:4px;font-size:14px;}
+.switch{position:relative;display:inline-block;width:44px;height:24px;}
+.switch input{display:none;}
+.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;}
+.slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+.switch input:checked + .slider{background:var(--accent);}
+.switch input:checked + .slider:before{transform:translateX(20px);}
+.theme-btn{padding:8px 12px;border-radius:8px;font-size:12px;margin-right:8px;cursor:pointer;border:2px solid transparent;}
+.theme-btn.active{border-color:var(--accent);}
+/* 自动折叠已完成区 */
+.collapse-done{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;}
+.collapse-header{font-size:13px;color:var(--sub);cursor:pointer;display:flex;justify-content:space-between;user-select:none;}
+.collapse-body{display:none;margin-top:6px;}
+.collapse-body.show{display:block;}
+.res-val .add {
+  display: inline-block;
+  background: #34c759;
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  margin-left: 4px;
+  vertical-align: middle;
+  font-weight: 600;
+  transform: translateY(-2px);
+}
+.notice {
+  font-size: 11px;
+  color: #8e8e93 !important;
+  font-weight: normal !important;
+  margin-left: 5px;
+}
+.cal-cell {
+  overflow: hidden;
+  min-height: 52px;
+}
+.cal-cell .cal-event-name {
+  font-size: 9px;
+  line-height: 1.1;
+  padding: 1px 2px;
+  width: 88%;
+  margin: 0 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.cal-cell .cal-day {
+  font-size: 11px;
+}
+.cal-cell .cal-more {
+  font-size: 8px;
+  color: var(--sub);
+}
+.inline-edit {
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: inherit;
+  font-family: inherit;
+  background: #fff;
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+}
+/* 全局背景层 */
+#appBg {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<div id="accountBar"></div>
+
+<div id="page-daily" class="page active"></div>
+<div id="page-weekly" class="page"></div>
+<div id="page-activity" class="page"></div>
+<div id="page-settings" class="page"></div>
+
+<div id="tabBar">
+  <button data-tab="daily" class="active"><span class="icon">📋</span>日常</button>
+  <button data-tab="weekly"><span class="icon">📅</span>周常</button>
+  <button data-tab="activity"><span class="icon">🎉</span>活动</button>
+  <button data-tab="settings"><span class="icon">⚙️</span>设置</button>
+</div>
+
+<script>
+/* ==================== 常量与数据 ==================== */
+var STORAGE_KEY = 'game_checkin_v3';
+var RES_KEYS = ['勾玉','蓝票','黑蛋','黑碎'];
+
+function defaultRes(){
+  return {
+    勾玉: { total:0, icon:'💎', color:'#333333', logs:[] },
+    蓝票: { total:0, icon:'🎫', color:'#333333', logs:[] },
+    黑蛋: { total:0, icon:'🥚', color:'#333333', logs:[] },
+    黑碎: { total:0, icon:'🖤', color:'#333333', logs:[] }
+  };
+}
+var DEFAULT_SECTIONS = [
+  { id:'s1', name:'日常任务', hint:'每日0点更新', tasks:[] },
+  { id:'s2', name:'悬赏任务', hint:'每日0点更新', tasks:[] },
+  { id:'s3', name:'结界寄养', hint:'每日0点更新', tasks:[] }
+];
+function newAccountData(){
+  return {
+    resources: defaultRes(),
+    daily: JSON.parse(JSON.stringify(DEFAULT_SECTIONS)),
+    weekly: { taskGroups:[
+      {id:'w1',name:'神秘商店',options:[]},
+      {id:'w2',name:'寮活动',options:[]},
+      {id:'w3',name:'固定奖励',options:[]},
+      {id:'w4',name:'分档奖励',options:[]},
+      {id:'w5',name:'战斗及其他',options:[]}
+    ]},
+    activity:[],
+    specialCard: { name:'特殊项目卡', done:false }
+  };
+}
+function defaultDB(){
+  return {
+    accounts:[{ id:'main', name:'主号', isMain:true }],
+    currentId:'main',
+    data:{ main: newAccountData() },
+    settings:{ autoCollapse:false }
+  };
+}
+
+var DB = load();
+function load(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      var parsed = JSON.parse(raw);
+      if(!parsed.settings) parsed.settings = { autoCollapse:false };
+      return parsed;
+    }
+  }catch(e){}
+  return defaultDB();
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
+function cur(){ return DB.data[DB.currentId]; }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+/* ==================== 自定义弹窗 ==================== */
+function customPrompt(title, defaultValue, callback){
+  var old = document.getElementById('customModal'); if(old) old.parentNode.removeChild(old);
+  var overlay = document.createElement('div'); overlay.id = 'customModal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px;padding:16px;width:100%;max-width:400px;box-sizing:border-box;';
+  var titleEl = document.createElement('div');
+  titleEl.innerText = title; titleEl.style.cssText = 'font-weight:600;margin-bottom:10px;font-size:15px;color:#333;';
+  var input = document.createElement('input');
+  input.type = 'text'; input.value = defaultValue || '';
+  input.style.cssText = 'width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px;box-sizing:border-box;';
+  var btns = document.createElement('div'); btns.style.cssText = 'display:flex;gap:10px;margin-top:15px;';
+  var cancelBtn = document.createElement('button'); cancelBtn.innerText = '取消'; cancelBtn.style.cssText = 'flex:1;padding:10px;background:#f0f0f0;color:#333;border:none;border-radius:8px;font-size:15px;';
+  cancelBtn.onclick = function(){ overlay.parentNode.removeChild(overlay); };
+  var okBtn = document.createElement('button'); okBtn.innerText = '确定'; okBtn.style.cssText = 'flex:1;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;';
+  okBtn.onclick = function(){ var val = input.value; overlay.parentNode.removeChild(overlay); if(callback) callback(val); };
+  btns.appendChild(cancelBtn); btns.appendChild(okBtn);
+  box.appendChild(titleEl); box.appendChild(input); box.appendChild(btns);
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  input.focus();
+}
+function customConfirm(title, callback){
+  var old = document.getElementById('customModal'); if(old) old.parentNode.removeChild(old);
+  var overlay = document.createElement('div'); overlay.id = 'customModal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div'); box.style.cssText = 'background:#fff;border-radius:12px;padding:16px;width:100%;max-width:400px;box-sizing:border-box;';
+  var titleEl = document.createElement('div'); titleEl.innerText = title; titleEl.style.cssText = 'font-weight:600;margin-bottom:15px;font-size:15px;color:#333;';
+  var btns = document.createElement('div'); btns.style.cssText = 'display:flex;gap:10px;';
+  var cancelBtn = document.createElement('button'); cancelBtn.innerText = '取消'; cancelBtn.style.cssText = 'flex:1;padding:10px;background:#f0f0f0;color:#333;border:none;border-radius:8px;font-size:15px;';
+  cancelBtn.onclick = function(){ overlay.parentNode.removeChild(overlay); };
+  var okBtn = document.createElement('button'); okBtn.innerText = '确定'; okBtn.style.cssText = 'flex:1;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;';
+  okBtn.onclick = function(){ overlay.parentNode.removeChild(overlay); if(callback) callback(); };
+  btns.appendChild(cancelBtn); btns.appendChild(okBtn);
+  box.appendChild(titleEl); box.appendChild(btns);
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+function closeModal(id){ var el = document.getElementById(id); if(el && el.parentNode) el.parentNode.removeChild(el); }
+
+/* ==================== 渲染主入口 ==================== */
+function render(){
+  renderAccounts();
+  renderDaily();
+  renderWeekly();
+  renderActivity();
+  renderSettings();
+}
+
+/* ==================== 账号栏 ==================== */
+function renderAccounts(){
+  var bar = document.getElementById('accountBar');
+  bar.innerHTML = '';
+  DB.accounts.forEach(function(acc){
+    var el = document.createElement('div');
+    el.className = 'acc-tab' + (acc.id===DB.currentId?' active':'');
+    el.innerHTML = '<span>' + acc.name + '</span>' + (acc.isMain ? '' : '<span class="del" data-del="' + acc.id + '">×</span>');
+    el.onclick = function(e){
+      if(e.target.dataset.del){
+        customConfirm('删除账号「'+acc.name+'」？数据不可恢复', function(){
+          deleteAccount(e.target.dataset.del);
+        });
+        return;
+      }
+      DB.currentId = acc.id; save(); render();
+    };
+    el.ondblclick = function(){
+      customPrompt('重命名账号', acc.name, function(n){ if(n){ acc.name = n; save(); render(); } });
+    };
+    bar.appendChild(el);
+  });
+  var add = document.createElement('button');
+  add.className='acc-add'; add.textContent='+';
+  add.onclick = addAccount;
+  bar.appendChild(add);
+}
+function addAccount(){
+  customPrompt('新账号名称', '小号'+(DB.accounts.length), function(name){
+    if(!name) return;
+    var id = uid();
+    DB.accounts.push({ id: id, name: name, isMain:false });
+    DB.data[id] = newAccountData();
+    DB.currentId = id;
+    save(); render();
+  });
+}
+function deleteAccount(id){
+  DB.accounts = DB.accounts.filter(function(a){return a.id!==id;});
+  delete DB.data[id];
+  if(DB.currentId===id) DB.currentId = DB.accounts[0].id;
+  save(); render();
+}
+
+/* ==================== 日常页 ==================== */
+function renderDaily(){
+  var p = document.getElementById('page-daily');
+  var d = cur();
+  if(!d.specialCard) d.specialCard = { name:'特殊项目卡', done:false };
+  if(!d.resources) d.resources = defaultRes();
+  var html = '';
+
+  /* ----- 资源汇总 ----- */
+  html += '<div class="section">';
+  html += '<div class="section-title"><span>资源汇总</span>';
+  html += '<div style="display:flex;gap:6px;">';
+  html += '<button class="btn ghost" style="padding:4px 10px;font-size:12px;" onclick="toggleHistoryInline()">' + (d.historyOpen ? '收起 ▲' : '历史 ▼') + '</button>';
+  html += '<button class="btn ghost" style="padding:4px 10px;font-size:12px;" onclick="editResources()">修改总数</button>';
+  html += '</div></div>';
+
+  html += '<div class="res-grid">';
+    RES_KEYS.forEach(function(k){
+    var res = d.resources[k] || { total:0, icon:'', color:'#333333', logs:[] };
+    var todayAdd = getResourceSum(k, 'today');
+    var addHtml = todayAdd > 0 ? '<span class="add">+' + todayAdd + '</span>' : '';
+    var iconHtml = (res.icon && res.icon.indexOf('data:image') === 0)
+      ? '<img src="' + res.icon + '" style="width:28px;height:28px;object-fit:contain;">'
+      : (res.icon || k.charAt(0));
+    html += '<div class="res-item" onclick="openResourceMenu(\'' + k + '\')">';
+    html += '<div class="res-icon">' + iconHtml + '</div>';
+    html += '<div class="res-name" style="color:' + (res.color||'#333') + ';">' + k + '</div>';
+    html += '<div class="res-val">' + (res.total||0) + addHtml + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  // 内联历史面板
+  if(d.historyOpen){
+    html += renderHistoryInline(d);
+  }
+  html += '<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line);">';
+  RES_KEYS.forEach(function(k){
+    var res = d.resources[k] || { icon:'', color:'#333' };
+    var iconHtml = (res.icon && res.icon.indexOf('data:image') === 0)
+      ? '<img src="' + res.icon + '" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;object-fit:contain;">'
+      : '<span style="margin-right:4px;">' + (res.icon || k.charAt(0)) + '</span>';
+    var todaySum = getResourceSum(k, 'today');
+    var weekSum = getResourceSum(k, 'week');
+    var monthSum = getResourceSum(k, 'month');
+    html += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;color:var(--sub);">';
+    html += '<span>' + iconHtml + k + '</span>';
+    html += '<span>今日:<b style="color:var(--accent);margin-left:4px;">' + todaySum + '</b> 本周:<b style="color:var(--accent);margin-left:4px;">' + weekSum + '</b> 本月:<b style="color:var(--accent);margin-left:4px;">' + monthSum + '</b></span>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  /* ----- 三个板块 ----- */
+  d.daily.forEach(function(sec){
+    if(sec.collapsed === undefined) sec.collapsed = false;
+    html += '<div class="section">';
+    html += '<div class="section-title">';
+    html += '<span ondblclick="editSectionName(\'' + sec.id + '\',this)">' + sec.name + '<span class="notice">' + (sec.hint||'') + '</span></span>';
+    html += '<div style="display:flex;gap:8px;align-items:center;">';
+    html += '<button class="btn ghost" style="padding:2px 10px;font-size:18px;line-height:1;" onclick="addTask(\'' + sec.id + '\')">+</button>';
+    html += '<span style="cursor:pointer;font-size:13px;color:var(--sub);" onclick="toggleCollapse(\'' + sec.id + '\')">' + (sec.collapsed ? '展开 ▼' : '折叠 ▲') + '</span>';
+    html += '</div></div>';
+
+    if(sec.id === 's1' && !sec.collapsed){
+      html += '<button class="btn ghost" style="width:100%;margin-bottom:8px" onclick="oneClickComplete(\'' + sec.id + '\')">一键完成日常任务</button>';
+    }
+
+    if(!sec.collapsed){
+      var undoneTasks = sec.tasks.filter(function(t){ return !t.done; });
+      var doneTasks = sec.tasks.filter(function(t){ return t.done; });
+      
+      if(sec.tasks.length === 0){
+        html += '<div class="empty">暂无任务，点右上角 + 添加</div>';
+      }
+      
+      undoneTasks.forEach(function(t){
+        html += '<div class="task">';
+        html += '<div class="check" onclick="toggleTask(\'' + sec.id + '\',\'' + t.id + '\')"></div>';
+        html += '<div class="name" style="flex:1;" ondblclick="editTaskName(\'' + sec.id + '\',\'' + t.id + '\',this)">'
+        if(sec.id === 's1'){
+          html += '<span style="cursor:pointer;font-size:12px;margin-right:4px;" onclick="toggleAutoComplete(\'' + sec.id + '\',\'' + t.id + '\')" title="点击切换一键完成状态">' + (t.noAutoComplete ? '🔒' : '🔓') + '</span>';
+        }
+        html += t.name + '</div>';
+        html += '<input class="num" type="number" value="' + (t.count||0) + '" onchange="setCount(\'' + sec.id + '\',\'' + t.id + '\',this.value)">';
+        html += '<span class="reward-tag" onclick="setReward(\'' + sec.id + '\',\'' + t.id + '\')">' + (t.reward || '设置奖励') + '</span>';
+        html += '<button class="del-btn" onclick="delTask(\'' + sec.id + '\',\'' + t.id + '\')">×</button>';
+        html += '</div>';
+      });
+      
+      if(DB.settings.autoCollapse && doneTasks.length > 0){
+        html += '<div class="collapse-done">';
+        html += '<div class="collapse-header" onclick="toggleDoneCollapse(\'' + sec.id + '\')">';
+        html += '<span>已完成 (' + doneTasks.length + ')</span>';
+        html += '<span>' + (sec.showDone ? '收起 ▲' : '展开 ▼') + '</span></div>';
+        html += '<div class="collapse-body' + (sec.showDone?' show':'') + '">';
+        doneTasks.forEach(function(t){
+          html += '<div class="task done">';
+          html += '<div class="check" onclick="toggleTask(\'' + sec.id + '\',\'' + t.id + '\')"></div>';
+          html += '<div class="name">' + t.name + '</div>';
+          html += '</div>';
+        });
+        html += '</div></div>';
+      }
+    }
+    html += '</div>';
+  });
+
+  /* ----- 特殊项目卡 ----- */
+  html += '<div class="section">';
+  html += '<div class="task ' + (d.specialCard.done?'done':'') + '" style="border-bottom:none;">';
+  html += '<div class="check" onclick="toggleSpecialCard()"></div>';
+  html += '<div class="name" ondblclick="renameSpecialCard()">' + d.specialCard.name + '<span class="notice">(每日+20勾玉)</span></div>';
+  html += '</div></div>';
+
+  p.innerHTML = html;
+}
+
+/* ==================== 资源：菜单 / 编辑 / 日志 ==================== */
+function openResourceMenu(key){
+  closeModal('resMenu');
+  var overlay = document.createElement('div'); overlay.id = 'resMenu';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px 12px 0 0;padding:16px;width:100%;max-width:500px;box-sizing:border-box;';
+  var title = document.createElement('div');
+  title.innerText = '编辑「' + key + '」'; title.style.cssText = 'font-weight:600;margin-bottom:12px;text-align:center;font-size:15px;';
+  box.appendChild(title);
+
+  function makeBtn(text, fn){
+    var b = document.createElement('button');
+    b.innerText = text;
+    b.style.cssText = 'width:100%;padding:12px;margin-bottom:8px;background:#f5f5f7;border:none;border-radius:8px;font-size:15px;';
+    b.onclick = function(){ closeModal('resMenu'); fn(); };
+    return b;
+  }
+  box.appendChild(makeBtn('更换图标', function(){ editResourceIcon(key); }));
+  box.appendChild(makeBtn('修改文字', function(){ editResourceName(key); }));
+  box.appendChild(makeBtn('修改文字颜色', function(){ editResourceColor(key); }));
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.innerText = '取消'; cancelBtn.style.cssText = 'width:100%;padding:12px;background:#e5e5ea;border:none;border-radius:8px;font-size:15px;';
+  cancelBtn.onclick = function(){ closeModal('resMenu'); };
+  box.appendChild(cancelBtn);
+
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+
+function editResourceIcon(key){
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.onchange = function(e){
+    var file = e.target.files[0]; if(!file) return;
+    if(file.size > 1024 * 200){ alert('图片不能超过200KB，否则会撑爆本地存储'); return; }
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      cur().resources[key].icon = evt.target.result;
+      save(); render();
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function editResourceName(key){
+  var d = cur();
+  customPrompt('修改资源名称', key, function(newName){
+    if(!newName || newName === key) return;
+    // 建立新键（保留原数据）
+    d.resources[newName] = d.resources[key];
+    delete d.resources[key];
+    // 同步 RES_KEYS 顺序
+    var idx = RES_KEYS.indexOf(key);
+    if(idx > -1) RES_KEYS[idx] = newName;
+    save(); render();
+  });
+}
+
+function editResourceColor(key){
+  var d = cur();
+  customPrompt('输入颜色值（如 #ff0000）', d.resources[key].color || '#333333', function(color){
+    if(!color) return;
+    d.resources[key].color = color;
+    save(); render();
+  });
+}
+
+function editResources(){
+  var d = cur();
+  closeModal('resEditor');
+  var overlay = document.createElement('div'); overlay.id = 'resEditor';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px;padding:16px;width:100%;max-width:400px;box-sizing:border-box;';
+  var title = document.createElement('div'); title.innerText = '修改资源总数'; title.style.cssText = 'font-weight:600;margin-bottom:15px;font-size:15px;color:#333;';
+  box.appendChild(title);
+
+  var inputs = {};
+  RES_KEYS.forEach(function(k){
+    var row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center;margin-bottom:10px;';
+    var label = document.createElement('span'); label.innerText = k; label.style.cssText = 'width:70px;font-size:14px;color:#333;';
+    var input = document.createElement('input'); input.type = 'number'; input.value = (d.resources[k] && d.resources[k].total) || 0;
+    input.style.cssText = 'flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;';
+    row.appendChild(label); row.appendChild(input); box.appendChild(row);
+    inputs[k] = input;
+  });
+
+  var btns = document.createElement('div'); btns.style.cssText = 'display:flex;gap:10px;margin-top:15px;';
+  var cancelBtn = document.createElement('button'); cancelBtn.innerText = '取消'; cancelBtn.style.cssText = 'flex:1;padding:10px;background:#f0f0f0;color:#333;border:none;border-radius:8px;font-size:15px;';
+  cancelBtn.onclick = function(){ closeModal('resEditor'); };
+  var okBtn = document.createElement('button'); okBtn.innerText = '确定'; okBtn.style.cssText = 'flex:1;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;';
+  okBtn.onclick = function(){
+    RES_KEYS.forEach(function(k){ d.resources[k].total = Number(inputs[k].value) || 0; });
+    closeModal('resEditor'); save(); render();
+  };
+  btns.appendChild(cancelBtn); btns.appendChild(okBtn);
+  box.appendChild(btns); overlay.appendChild(box); document.body.appendChild(overlay);
+}
+
+function getResourceSum(key, period){
+  var d = cur();
+  var res = d.resources[key];
+  if(!res || !res.logs) return 0;
+  
+  var now = new Date();
+  var todayNum = now.getFullYear() * 10000 + (now.getMonth()+1) * 100 + now.getDate();
+  
+  // 忽略日期，只统计最近一次连续同一天的净变动
+  // 这里改成：如果今天有日志，或者最近一条日志是今天的，就统计
+  var sum = 0;
+  var foundToday = false;
+  // 倒着遍历，找到今天（含误差）的日志
+  for(var i = res.logs.length - 1; i >= 0; i--){
+    var log = res.logs[i];
+    var parts = log.date.split('-');
+    var logNum = parseInt(parts[0]) * 10000 + parseInt(parts[1]) * 100 + parseInt(parts[2]);
+    // 如果日期匹配今天，或者只差 1 天（电脑手机时间误差），都算今天
+    if(logNum === todayNum || Math.abs(logNum - todayNum) <= 1){
+      sum += log.amount;
+      foundToday = true;
+    } else if(foundToday){
+      break; // 遇到不是今天的就停
+    }
+  }
+  
+  // 如果按日期找不到，fallback：直接用最后一条日志
+  if(sum === 0 && res.logs.length > 0){
+    sum = res.logs[res.logs.length - 1].amount;
+  }
+  
+  return sum;
+}
+function getTotalSum(period){
+  var sum = 0;
+  RES_KEYS.forEach(function(k){ sum += getResourceSum(k, period); });
+  return sum;
+}
+function addResourceLog(key, amount){
+  var d = cur();
+  if(!d.resources[key]) return;
+  var todayStr = new Date().toISOString().slice(0,10);
+  d.resources[key].logs = d.resources[key].logs || [];
+  d.resources[key].logs.push({ date: todayStr, amount: amount });
+  d.resources[key].total = Math.max(0, (d.resources[key].total||0) + amount);
+  console.log('写入日志:', key, amount, '今日:', todayStr, '当前日志:', JSON.stringify(d.resources[key].logs));
+}
+
+/* ==================== 资源历史 ==================== */
+var historyView = { period:'day', offset:0 };
+
+
+/* ==================== 日常：任务与特殊卡 ==================== */
+function renameSection(sid){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  customPrompt('重命名板块', sec.name, function(n){ if(n){ sec.name = n; save(); render(); } });
+}
+function toggleCollapse(sid){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  sec.collapsed = !sec.collapsed; save(); render();
+}
+function oneClickComplete(sid){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  sec.tasks.forEach(function(t){
+    if(t.noAutoComplete || t.done) return;
+    t.done = true;
+    var rk = getResourceKeyFromReward(t.reward);
+    var count = Number(t.count) || 0;
+    if(rk && count > 0){
+      addResourceLog(rk, count);
+      t.loggedKey = rk;
+      t.loggedAmount = count;
+    }
+  });
+  recordCheckInToday();
+  save(); render();
+}
+function toggleTask(sid,tid){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  var t = sec.tasks.find(function(t){return t.id===tid;});
+  var rk = getResourceKeyFromReward(t.reward);
+
+  if(!t.done){
+    // 打卡
+    t.done = true;
+    recordCheckInToday();
+    if(rk && t.count){
+      addResourceLog(rk, t.count);
+      t.loggedAmount = t.count;
+      t.loggedKey = rk;
+    }
+  } else {
+    // 取消打卡
+    t.done = false;
+    if(t.loggedKey && t.loggedAmount){
+      addResourceLog(t.loggedKey, -t.loggedAmount);
+      t.loggedAmount = 0;
+      t.loggedKey = null;
+    }
+  }
+  save(); render();
+}
+function renameTask(sid,tid){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  var t = sec.tasks.find(function(t){return t.id===tid;});
+  customPrompt('重命名任务', t.name, function(n){ if(n){ t.name = n; save(); render(); } });
+}
+function addTask(sid){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  showAddTaskModal(sid, function(data){
+    sec.tasks.push({
+      id: uid(),
+      name: data.name,
+      done: false,
+      count: data.count,
+      reward: data.reward,
+      noAutoComplete: data.noAutoComplete,
+      loggedKey: null,
+      loggedAmount: 0
+    });
+    save(); render();
+  });
+}
+function delTask(sid,tid){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  sec.tasks = sec.tasks.filter(function(t){return t.id!==tid;}); save(); render();
+}
+function setCount(sid,tid,val){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  var t = sec.tasks.find(function(t){return t.id===tid;});
+  var newCount = Number(val) || 0;
+
+  // 如果任务已经打卡，且之前记录过资源日志，先扣回旧数值，再写入新数值
+  if(t.done && t.loggedKey && t.loggedAmount){
+    addResourceLog(t.loggedKey, -t.loggedAmount);
+    addResourceLog(t.loggedKey, newCount);
+    t.loggedAmount = newCount;
+  }
+
+  t.count = newCount;
+  save(); render();
+}
+function setReward(sid, tid){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  var t = sec.tasks.find(function(t){return t.id===tid;});
+  showRewardPicker(function(val){ t.reward = val; save(); render(); });
+}
+function showRewardPicker(callback){
+  closeModal('rewardPicker');
+  var overlay = document.createElement('div'); overlay.id = 'rewardPicker';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px;padding:16px;width:100%;max-width:400px;box-sizing:border-box;max-height:80vh;overflow-y:auto;';
+  var title = document.createElement('div'); title.innerText = '选择奖励类型'; title.style.cssText = 'font-weight:600;margin-bottom:12px;font-size:15px;';
+  box.appendChild(title);
+  var presets = [
+    { label:'💎 勾玉', val:'💎 勾玉' },
+    { label:'🎫 蓝票', val:'🎫 蓝票' },
+    { label:'🥚 黑蛋', val:'🥚 黑蛋' },
+    { label:'🖤 黑碎', val:'🖤 黑碎' },
+    { label:'❌ 清除奖励', val:'' }
+  ];
+  presets.forEach(function(item){
+    var btn = document.createElement('button'); btn.innerText = item.label;
+    btn.style.cssText = 'width:100%;padding:12px;margin-bottom:8px;background:#f5f5f7;color:#1c1c1e;border:1px solid #e5e5ea;border-radius:8px;font-size:15px;text-align:left;cursor:pointer;';
+    btn.onclick = function(){ closeModal('rewardPicker'); if(callback) callback(item.val); };
+    box.appendChild(btn);
+  });
+  var cancelBtn = document.createElement('button'); cancelBtn.innerText = '取消'; cancelBtn.style.cssText = 'width:100%;padding:12px;margin-top:4px;background:#e5e5ea;border:none;border-radius:8px;font-size:15px;';
+  cancelBtn.onclick = function(){ closeModal('rewardPicker'); };
+  box.appendChild(cancelBtn);
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+function toggleSpecialCard(){
+  var d = cur();
+  d.specialCard.done = !d.specialCard.done;
+  if(d.specialCard.done) addResourceLog('勾玉', 20);
+  else addResourceLog('勾玉', -20);
+  recordCheckInToday();
+  save(); render();
+}
+function renameSpecialCard(){
+  var d = cur();
+  customPrompt('重命名特殊项目卡', d.specialCard.name, function(n){ if(n){ d.specialCard.name = n; save(); render(); } });
+}
+
+/* ==================== 周常 / 活动 / 设置（占位） ==================== */
+function renderWeekly(){
+  var d = cur();
+  ensureWeeklyData(d);
+  var p = document.getElementById('page-weekly');
+  var html = '';
+  html += '<div style="display:flex;background:#e5e5ea;border-radius:10px;padding:3px;margin-bottom:10px;">';
+  html += '<button class="wt-subtab' + (d.weekly.subTab==='shop'?'':' active') + '" onclick="switchWeeklySub(\'tasks\')">每周任务</button>';
+  html += '<button class="wt-subtab' + (d.weekly.subTab==='shop'?' active':'') + '" onclick="switchWeeklySub(\'shop\')">商店购买</button>';
+  html += '</div>';
+  if(d.weekly.subTab === 'shop'){
+    html += renderWeeklyShop(d);
+  } else {
+    html += renderWeeklyTasks(d);
+  }
+  p.innerHTML = html;
+}
+function renderActivity(){
+  var d = cur();
+  ensureActivityData(d);
+  var p = document.getElementById('page-activity');
+  var html = '';
+
+  // 1. 活动日历
+  html += '<div class="section">';
+  html += '<div class="section-title"><span>活动日历</span>';
+  html += '<div style="display:flex;gap:6px;">';
+  html += '<button class="btn ghost" style="padding:4px 10px;font-size:12px;" onclick="setCalendarBg()">背景</button>';
+  html += '</div></div>';
+  html += renderActivityCalendar(d);
+  html += '</div>';
+
+  // 2. 版本活动
+  html += '<div class="section">';
+  html += '<div class="section-title"><span>版本活动</span>';
+  html += '<button class="btn ghost" style="padding:2px 10px;font-size:18px;line-height:1;" onclick="addActivity()">+</button>';
+  html += '</div>';
+  if(d.activity.ongoing.length === 0){
+    html += '<div class="empty" style="padding:10px;">暂无活动，点右上角 + 添加</div>';
+  }
+  d.activity.ongoing.forEach(function(a){
+    html += renderActivityItem(a, false);
+  });
+  html += '</div>';
+
+  // 3. 已完成活动（最多显示3条）
+  html += '<div class="section">';
+  html += '<div class="section-title"><span>已完成活动</span></div>';
+  if(d.activity.completed.length === 0){
+    html += '<div class="empty" style="padding:10px;">暂无已完成活动</div>';
+  } else {
+    var recentCompleted = d.activity.completed.slice(0, 3);
+    var olderCompleted = d.activity.completed.slice(3);
+
+    recentCompleted.forEach(function(a){
+      html += renderActivityItem(a, true);
+    });
+
+    if(olderCompleted.length > 0){
+      html += '<div class="toggle-more" style="padding:8px 0;border-top:1px solid var(--line);" onclick="toggleActivityMore(\'completed\')">' + (d.activity.completedShowAll ? '收起 ▲' : '展开剩余 ' + olderCompleted.length + ' 条 ▼') + '</div>';
+    }
+
+    if(d.activity.completedShowAll && olderCompleted.length > 0){
+      olderCompleted.forEach(function(a){
+        html += renderActivityItem(a, true);
+      });
+    }
+  }
+
+  // 4. 其他收益（最多显示3条）
+  html += '<div class="section">';
+  html += '<div class="section-title"><span>其他收益</span>';
+  html += '<button class="btn ghost" style="padding:2px 10px;font-size:18px;line-height:1;" onclick="addOtherIncome()">+</button>';
+  html += '</div>';
+  if(d.activity.otherIncome.length === 0){
+    html += '<div class="empty" style="padding:10px;">暂无其他收益，点右上角 + 添加</div>';
+  } else {
+    var recentOther = d.activity.otherIncome.slice(0, 3);
+    var olderOther = d.activity.otherIncome.slice(3);
+
+    // 先渲染最新3条
+    recentOther.forEach(function(o){
+      html += '<div class="act-item">';
+      html += '<div class="act-head">';
+      html += '<div style="display:flex;align-items:center;gap:8px;">';
+      html += '<div class="wt-box" style="width:20px;height:20px;border-radius:4px;border:2px solid ' + (o.done?'var(--done)':'var(--line)') + ';background:' + (o.done?'var(--done)':'#fff') + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;cursor:pointer;" onclick="toggleOtherIncomeDone(\'' + o.id + '\')">' + (o.done?'✓':'') + '</div>';
+      html += '<span class="act-name" ondblclick="editOtherIncomeName(\'' + o.id + '\',this)" style="' + (o.done?'text-decoration:line-through;color:var(--sub);':'') + '">' + o.name + '</span>';
+      html += '</div>';
+      html += '<button class="del-btn" style="padding:2px 6px;" onclick="delOtherIncome(\'' + o.id + '\')">×</button>';
+      html += '</div>';
+      html += '<div class="act-rewards">';
+      html += '<div class="wt-reward-block">';
+      html += '<input type="number" value="' + (o.count||0) + '" onchange="setOtherIncomeCount(\'' + o.id + '\',this.value)">';
+      html += '<span class="r-icon" onclick="setOtherIncomeReward(\'' + o.id + '\')">' + (o.reward || '选图标') + '</span>';
+      html += '</div></div></div>';
+    });
+
+    // 中间放展开按钮
+    if(olderOther.length > 0){
+      html += '<div class="toggle-more" style="padding:8px 0;border-top:1px solid var(--line);" onclick="toggleActivityMore(\'other\')">' + (d.activity.otherShowAll ? '收起 ▲' : '展开剩余 ' + olderOther.length + ' 条 ▼') + '</div>';
+    }
+
+    // 展开后，旧记录显示在按钮下方
+    if(d.activity.otherShowAll && olderOther.length > 0){
+      olderOther.forEach(function(o){
+        html += '<div class="act-item">';
+        html += '<div class="act-head">';
+        html += '<div style="display:flex;align-items:center;gap:8px;">';
+        html += '<div class="wt-box" style="width:20px;height:20px;border-radius:4px;border:2px solid ' + (o.done?'var(--done)':'var(--line)') + ';background:' + (o.done?'var(--done)':'#fff') + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;cursor:pointer;" onclick="toggleOtherIncomeDone(\'' + o.id + '\')">' + (o.done?'✓':'') + '</div>';
+        html += '<span class="act-name" ondblclick="editOtherIncomeName(\'' + o.id + '\',this)" style="' + (o.done?'text-decoration:line-through;color:var(--sub);':'') + '">' + o.name + '</span>';
+        html += '</div>';
+        html += '<button class="del-btn" style="padding:2px 6px;" onclick="delOtherIncome(\'' + o.id + '\')">×</button>';
+        html += '</div>';
+        html += '<div class="act-rewards">';
+        html += '<div class="wt-reward-block">';
+        html += '<input type="number" value="' + (o.count||0) + '" onchange="setOtherIncomeCount(\'' + o.id + '\',this.value)">';
+        html += '<span class="r-icon" onclick="setOtherIncomeReward(\'' + o.id + '\')">' + (o.reward || '选图标') + '</span>';
+        html += '</div></div></div>';
+      });
+    }
+  }
+
+  p.innerHTML = html;
+}
+function renderSettings(){
+  if(!DB.settings) DB.settings = { autoCollapse:false, gameDays:0, checkInDays:0, theme:'light', reminders:['',''] };
+  if(!DB.settings.reminders) DB.settings.reminders = ['',''];
+  if(DB.settings.autoCollapse === undefined) DB.settings.autoCollapse = false;
+  if(DB.settings.gameDays === undefined) DB.settings.gameDays = 0;
+  if(DB.settings.checkInDays === undefined) DB.settings.checkInDays = 0;
+  if(!DB.settings.theme) DB.settings.theme = 'light';
+  if(!DB.settings.gameIcon) DB.settings.gameIcon = '🎮';
+  if(!DB.settings.checkInIcon) DB.settings.checkInIcon = '✅';
+
+  var html = '';
+
+  // 1. 资源汇总
+  html += renderResourcePanel();
+
+  // 2. 记录天数
+  html += '<div class="section">';
+  html += '<div class="section-title">记录</div>';
+  html += '<div style="display:flex;gap:10px;">';
+
+  // 游戏天数
+  html += '<div style="flex:1;text-align:center;padding:12px 8px;background:var(--bg);border-radius:10px;">';
+  html += '<div style="font-size:24px;cursor:pointer;" onclick="changeRecordIcon(\'game\')">' + (DB.settings.gameIcon || '🎮') + '</div>';
+  html += '<div style="font-size:13px;font-weight:600;margin:4px 0;">游戏天数</div>';
+  html += '<input class="set-input" style="width:70px;" type="number" value="' + (DB.settings.gameDays||0) + '" onchange="setGameDays(this.value)">';
+  html += '</div>';
+
+  // 打卡天数
+  html += '<div style="flex:1;text-align:center;padding:12px 8px;background:var(--bg);border-radius:10px;">';
+  html += '<div style="font-size:24px;cursor:pointer;" onclick="changeRecordIcon(\'checkin\')">' + (DB.settings.checkInIcon || '✅') + '</div>';
+  html += '<div style="font-size:13px;font-weight:600;margin:4px 0;">打卡天数</div>';
+  html += '<div style="font-size:20px;font-weight:700;color:var(--accent);">' + (DB.settings.checkInDays||0) + '</div>';
+  html += '</div>';
+
+  html += '</div>';
+  html += '<div class="set-sub" style="padding-top:8px;text-align:center;">点击图标可以从文件夹替换</div>';
+  html += '</div>';
+
+  // 3. 自动折叠总开关
+  html += '<div class="section">';
+  html += '<div class="section-title">自动折叠已完成</div>';
+  html += '<div class="set-row"><div><div class="set-label">开启后，日常/周常已完成任务会自动移动到折叠区</div><div class="set-sub">活动页不受影响</div></div>';
+  html += '<label class="switch"><input type="checkbox" ' + (DB.settings.autoCollapse?'checked':'') + ' onchange="toggleAutoCollapse(this.checked)"><span class="slider"></span></label></div>';
+  html += '</div>';
+
+  // 4. 外观设置
+    html += '<div class="section">';
+  html += '<div class="section-title">外观</div>';
+
+  // 主题
+  html += '<div class="set-row" style="flex-wrap:wrap;gap:8px;">';
+  html += '<div class="theme-btn' + (DB.settings.theme==='light'?' active':'') + '" style="background:#f5f5f7;color:#1c1c1e;" onclick="setTheme(\'light\')">浅色</div>';
+  html += '<div class="theme-btn' + (DB.settings.theme==='dark'?' active':'') + '" style="background:#1c1c1e;color:#fff;" onclick="setTheme(\'dark\')">深色</div>';
+  html += '<div class="theme-btn' + (DB.settings.theme==='green'?' active':'') + '" style="background:#e6f4ea;color:#137333;" onclick="setTheme(\'green\')">护眼</div>';
+  html += '</div>';
+
+    // 全局背景
+    html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">';
+  html += '<div style="font-size:14px;font-weight:600;margin-bottom:8px;">全局背景</div>';
+
+  html += '<div class="set-row"><span class="set-label">背景图片</span>';
+  html += '<div>';
+  html += '<button class="btn ghost" style="padding:6px 12px;font-size:13px;" onclick="confirmBgAction(\'choose\')">选择图片</button>';
+  if(DB.settings.bgImage){
+    html += ' <button class="btn ghost" style="padding:6px 12px;font-size:13px;" onclick="confirmBgAction(\'clear\')">清除</button>';
+  }
+  html += '</div></div>';
+
+  var bgOpacity = DB.settings.bgOpacity !== undefined ? DB.settings.bgOpacity : 0.3;
+  var bgBlur = DB.settings.bgBlur || 0;
+
+  html += '<div class="set-row"><span class="set-label">透明度</span>';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<input id="bgOpacitySlider" type="range" min="0" max="1" step="0.05" value="' + bgOpacity + '" oninput="previewBg()" style="width:120px;">';
+  html += '<span id="opacityLabel" style="font-size:12px;color:var(--sub);width:35px;">' + Math.round(bgOpacity*100) + '%</span>';
+  html += '</div></div>';
+
+  html += '<div class="set-row"><span class="set-label">高斯模糊</span>';
+  html += '<div style="display:flex;align-items:center;gap:8px;">';
+  html += '<input id="bgBlurSlider" type="range" min="0" max="20" step="1" value="' + bgBlur + '" oninput="previewBg()" style="width:120px;">';
+  html += '<span id="blurLabel" style="font-size:12px;color:var(--sub);width:35px;">' + bgBlur + 'px</span>';
+  html += '</div></div>';
+
+  html += '<div style="display:flex;gap:8px;margin-top:8px;">';
+  html += '<button class="btn" style="flex:1;padding:8px;font-size:13px;" onclick="applyBg()">应用</button>';
+  html += '<button class="btn ghost" style="flex:1;padding:8px;font-size:13px;" onclick="resetBgPreview()">重置</button>';
+  html += '</div>';
+  html += '</div>';
+ 
+
+  // 5. 提醒
+  html += '<div class="section">';
+  html += '<div class="section-title">每日提醒</div>';
+  html += '<div class="set-row"><span class="set-label">提醒 1</span><input type="time" value="' + (DB.settings.reminders[0]||'') + '" onchange="setReminder(0, this.value)" style="border:1px solid var(--line);border-radius:6px;padding:4px;font-size:14px;"></div>';
+  html += '<div class="set-row"><span class="set-label">提醒 2</span><input type="time" value="' + (DB.settings.reminders[1]||'') + '" onchange="setReminder(1, this.value)" style="border:1px solid var(--line);border-radius:6px;padding:4px;font-size:14px;"></div>';
+  html += '<div class="set-row"><span class="set-label">测试提醒</span><button class="btn ghost" style="padding:6px 12px;font-size:13px;" onclick="testReminder()">立即测试</button></div>';
+  html += '<div class="set-sub" style="padding-top:6px;">提醒需打包成APP后由原生层实现，网页版仅做记录与测试。</div>';
+  html += '</div>';
+
+  // 6. 数据导入导出
+  html += '<div class="section">';
+  html += '<div class="section-title">数据管理</div>';
+  html += '<div class="set-row"><span class="set-label">导出数据</span><button class="btn" style="padding:6px 12px;font-size:13px;" onclick="exportData()">导出 JSON</button></div>';
+  html += '<div class="set-row"><span class="set-label">导入数据</span><button class="btn ghost" style="padding:6px 12px;font-size:13px;" onclick="document.getElementById(\'importFile\').click()">选择文件</button><input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)"></div>';
+  html += '</div>';
+
+  document.getElementById('page-settings').innerHTML = html;
+}
+
+/* ==================== 底部 Tab ==================== */
+var currentTab = 'daily';
+function switchTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelectorAll('#tabBar button').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab===tab);
+  });
+}
+document.querySelectorAll('#tabBar button').forEach(function(b){
+  b.onclick = function(){ switchTab(b.dataset.tab); };
+});
+var touchStartX = 0, touchStartY = 0;
+document.body.addEventListener('touchstart', function(e){
+  touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+}, {passive:true});
+document.body.addEventListener('touchend', function(e){
+  var dx = e.changedTouches[0].clientX - touchStartX;
+  var dy = e.changedTouches[0].clientY - touchStartY;
+  if(Math.abs(dx)<60 || Math.abs(dy)>Math.abs(dx)) return;
+  var tabs = ['daily','weekly','activity','settings'];
+  var i = tabs.indexOf(currentTab);
+  if(dx<0 && i<tabs.length-1) switchTab(tabs[i+1]);
+  if(dx>0 && i>0) switchTab(tabs[i-1]);
+}, {passive:true});
+
+render();
+/* ==================== 周常 ==================== */
+function ensureWeeklyData(d){
+  if(!d.weekly) d.weekly = {};
+  if(!d.weekly.taskGroups){
+    d.weekly.taskGroups = [
+      { id:'w1', name:'神秘商店', hint:'每周一0点更新', options:[] },
+      { id:'w2', name:'寮活动', hint:'每周一0点更新', options:[], subCards:[] },
+      { id:'w3', name:'固定奖励', hint:'每周一0点更新', options:[] },
+      { id:'w4', name:'分档奖励', hint:'每周一0点更新', options:[] },
+      { id:'w5', name:'战斗及其他', hint:'每周一0点更新', options:[] }
+    ];
+  }
+  d.weekly.taskGroups.forEach(function(g){
+    if(!g.options) g.options = [];
+    if(g.id === 'w2' && !g.subCards) g.subCards = [];
+    if(!g.hint) g.hint = '每周一0点更新';
+  });
+  if(!d.weekly.shop) d.weekly.shop = [];
+  if(!d.weekly.special) d.weekly.special = { name:'特别板块', hint:'每双数周周四更新', items:[] };
+  if(!d.weekly.subTab) d.weekly.subTab = 'tasks';
+}
+
+function switchWeeklySub(tab){
+  cur().weekly.subTab = tab;
+  save(); render();
+}
+
+function renderWeeklyTasks(d){
+  var html = '';
+  d.weekly.taskGroups.forEach(function(g){
+    html += '<div class="section">';
+    html += '<div class="section-title">';
+    html += '<span ondblclick="editWeeklyGroupName(\'' + g.id + '\',this)">' + g.name + '<span class="notice">' + (g.hint||'') + '</span></span>';
+    html += '<button class="btn ghost" style="padding:2px 10px;font-size:18px;line-height:1;" onclick="addWeeklyItem(\'' + g.id + '\')">+</button>';
+    html += '</div>';
+    if(g.id === 'w2'){
+      if(!g.subCards || g.subCards.length === 0){
+        html += '<div class="empty" style="padding:10px;">暂无子项目卡，点右上角 + 添加</div>';
+      }
+      (g.subCards||[]).forEach(function(sc){
+        html += '<div class="wt-subcard">';
+        html += '<div class="wt-subcard-head">';
+        html += '<span ondblclick="renameSubCard(\'' + g.id + '\',\'' + sc.id + '\')">' + sc.name + '</span>';
+        html += '<div>';
+        html += '<button class="btn ghost" style="padding:2px 8px;font-size:16px;line-height:1;" onclick="addSubCardOption(\'' + g.id + '\',\'' + sc.id + '\')">+</button>';
+        html += '<button class="del-btn" style="padding:2px 6px;" onclick="delSubCard(\'' + g.id + '\',\'' + sc.id + '\')">×</button>';
+        html += '</div></div>';
+        html += renderOptions(g.id, sc.options, sc.id);
+        html += '</div>';
+      });
+    } else {
+      if(g.options.length === 0){
+        html += '<div class="empty" style="padding:10px;">暂无选项，点右上角 + 添加</div>';
+      }
+      html += renderOptions(g.id, g.options, null);
+    }
+    html += '</div>';
+  });
+  html += renderWeeklySpecial(d);
+  return html;
+}
+
+function renderOptions(gid, options, scid){
+  if(!options || options.length === 0) return '';
+  var html = '<div class="wt-options">';
+  options.forEach(function(o){
+    var cls = 'wt-option' + (o.done?' done':'');
+    html += '<div class="' + cls + '" style="flex-wrap:wrap;">';
+    html += '<div class="wt-box" onclick="toggleWeeklyOption(\'' + gid + '\',\'' + o.id + '\',\'' + (scid||'') + '\')">' + (o.done?'✓':'') + '</div>';
+    html += '<span ondblclick="editWeeklyOptionName(\'' + gid + '\',\'' + o.id + '\',\'' + (scid||'') + '\',this)">' + o.name + '</span>';
+    html += '<input type="number" value="' + (o.count||0) + '" onchange="setWeeklyOptionCount(\'' + gid + '\',\'' + o.id + '\',\'' + (scid||'') + '\',this.value)" style="width:40px;text-align:center;border:1px solid var(--line);border-radius:4px;font-size:12px;padding:2px;">';
+    html += '<span class="reward-tag" style="font-size:11px;padding:2px 4px;" onclick="setWeeklyOptionReward(\'' + gid + '\',\'' + o.id + '\',\'' + (scid||'') + '\')">' + (o.reward || '奖励') + '</span>';
+    html += '<span style="color:#ccc;padding:0 2px;cursor:pointer;" onclick="delWeeklyOption(\'' + gid + '\',\'' + o.id + '\',\'' + (scid||'') + '\')">×</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderWeeklyShop(d){
+  var html = '';
+  html += '<div class="section">';
+  html += '<div class="section-title">';
+  html += '<span>商店购买<span class="notice">每周一0点更新</span></span>';
+  html += '<button class="btn ghost" style="padding:2px 10px;font-size:18px;line-height:1;" onclick="addShopItem()">+</button>';
+  html += '</div>';
+  if(d.weekly.shop.length === 0){
+    html += '<div class="empty" style="padding:10px;">暂无购买项，点右上角 + 添加</div>';
+  }
+  d.weekly.shop.forEach(function(item){
+    if(!item.name) item.name = '购买项';
+    if(item.done === undefined) item.done = false;
+    html += '<div class="wt-shop-item">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;">';
+    html += '<div class="wt-box ' + (item.done?'done':'') + '" style="width:20px;height:20px;border-radius:4px;border:2px solid ' + (item.done?'var(--done)':'var(--line)') + ';background:' + (item.done?'var(--done)':'#fff') + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;cursor:pointer;" onclick="toggleShopDone(\'' + item.id + '\')">' + (item.done?'✓':'') + '</div>';
+    html += '<span style="font-size:14px;font-weight:600;cursor:pointer;' + (item.done?'text-decoration:line-through;color:var(--sub);':'') + '" ondblclick="editShopItemName(\'' + item.id + '\',this)">' + item.name + '</span>';
+    html += '</div>';
+    html += '<button class="del-btn" style="padding:2px 6px;font-size:13px;" onclick="delShopItem(\'' + item.id + '\')">删除</button>';
+    html += '</div>';
+    html += '<div class="wt-shop-rewards">';
+    item.rewards.forEach(function(r, idx){
+      html += '<div class="wt-reward-block">';
+      html += '<input type="number" value="' + (r.count||0) + '" onchange="setShopRewardCount(\'' + item.id + '\',' + idx + ',this.value)">';
+      html += '<span class="r-icon" onclick="setShopRewardIcon(\'' + item.id + '\',' + idx + ')">' + (r.reward || '选图标') + '</span>';
+      html += '<button class="r-del" onclick="delShopReward(\'' + item.id + '\',' + idx + ')">×</button>';
+      html += '</div>';
+    });
+    html += '<button class="btn ghost" style="padding:4px 10px;font-size:13px;" onclick="addShopReward(\'' + item.id + '\')">+ 奖励</button>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderWeeklySpecial(d){
+  var sp = d.weekly.special;
+  if(!sp) return '';
+  var html = '';
+  html += '<div class="section">';
+  html += '<div class="section-title">';
+  html += '<span ondblclick="editSpecialName(this)">' + sp.name + '<span class="notice">' + (sp.hint||'') + '</span></span>';
+  html += '<button class="btn ghost" style="padding:2px 10px;font-size:18px;line-height:1;" onclick="addSpecialItem()">+</button>';
+  html += '</div>';
+  if(sp.items.length === 0){
+    html += '<div class="empty" style="padding:10px;">暂无项目，点右上角 + 添加</div>';
+  }
+  sp.items.forEach(function(item){
+    html += '<div class="wt-shop-item">';
+    html += '<div class="wt-shop-rewards">';
+    var cls = 'wt-option' + (item.done?' done':'');
+    html += '<div class="' + cls + '">';
+    html += '<div class="wt-box" onclick="toggleSpecialItem(\'' + item.id + '\')">' + (item.done?'✓':'') + '</div>';
+    html += '<span ondblclick="editSpecialItemName(\'' + item.id + '\',this)">' + (item.name||'项目') + '</span>';
+    html += '</div>';
+    html += '<div class="wt-reward-block">';
+    html += '<input type="number" value="' + (item.count||0) + '" onchange="setSpecialItemCount(\'' + item.id + '\',this.value)">';
+    html += '<span class="r-icon" onclick="setSpecialItemReward(\'' + item.id + '\')">' + (item.reward || '选图标') + '</span>';
+    html += '</div>';
+    html += '<button class="del-btn" onclick="delSpecialItem(\'' + item.id + '\')">×</button>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+/* --- 每周任务事件 --- */
+function addWeeklyItem(gid){
+  if(gid === 'w2'){
+    customPrompt('子项目卡名称', '', function(name){
+      if(!name) return;
+      var g = cur().weekly.taskGroups.find(function(x){return x.id===gid;});
+      if(!g.subCards) g.subCards = [];
+      g.subCards.push({ id:uid(), name:name, options:[] });
+      save(); render();
+    });
+  } else {
+    showAddOptionModal('新增选项', function(data){
+      var g = cur().weekly.taskGroups.find(function(x){return x.id===gid;});
+      g.options.push({
+        id: uid(),
+        name: data.name,
+        done: false,
+        count: data.count,
+        reward: data.reward,
+        loggedKey: null,
+        loggedAmount: 0
+      });
+      save(); render();
+    });
+  }
+}
+function findWeeklyOption(gid, oid, scid){
+  var g = cur().weekly.taskGroups.find(function(x){return x.id===gid;});
+  if(!g) return null;
+  if(scid){
+    var sc = (g.subCards||[]).find(function(x){return x.id===scid;});
+    if(!sc) return null;
+    return sc.options.find(function(x){return x.id===oid;});
+  }
+  return g.options.find(function(x){return x.id===oid;});
+}
+function toggleWeeklyOption(gid, oid, scid){
+  var o = findWeeklyOption(gid, oid, scid);
+  if(!o) return;
+  var rk = getResourceKeyFromReward(o.reward);
+  var count = Number(o.count) || 0;
+
+  if(!o.done){
+    o.done = true;
+    if(rk && count > 0){
+      addResourceLog(rk, count);
+      o.loggedKey = rk;
+      o.loggedAmount = count;
+    }
+  } else {
+    o.done = false;
+    if(o.loggedKey && o.loggedAmount){
+      addResourceLog(o.loggedKey, -o.loggedAmount);
+      o.loggedKey = null;
+      o.loggedAmount = 0;
+    }
+  }
+  save(); render();
+}
+function renameWeeklyOption(gid, oid, scid){
+  var o = findWeeklyOption(gid, oid, scid);
+  if(!o) return;
+  customPrompt('重命名选项', o.name, function(n){ if(n){ o.name = n; save(); render(); } });
+}
+function delWeeklyOption(gid, oid, scid){
+  var g = cur().weekly.taskGroups.find(function(x){return x.id===gid;});
+  if(!g) return;
+  if(scid){
+    var sc = g.subCards.find(function(x){return x.id===scid;});
+    if(sc) sc.options = sc.options.filter(function(x){return x.id!==oid;});
+  } else {
+    g.options = g.options.filter(function(x){return x.id!==oid;});
+  }
+  save(); render();
+}
+function renameWeeklyGroup(gid){
+  var g = cur().weekly.taskGroups.find(function(x){return x.id===gid;});
+  customPrompt('重命名板块', g.name, function(n){ if(n){ g.name = n; save(); render(); } });
+}
+function renameSubCard(gid, scid){
+  var g = cur().weekly.taskGroups.find(function(x){return x.id===gid;});
+  var sc = g.subCards.find(function(x){return x.id===scid;});
+  customPrompt('重命名子项目卡', sc.name, function(n){ if(n){ sc.name = n; save(); render(); } });
+}
+function delSubCard(gid, scid){
+  customConfirm('删除该子项目卡？', function(){
+    var g = cur().weekly.taskGroups.find(function(x){return x.id===gid;});
+    g.subCards = g.subCards.filter(function(x){return x.id!==scid;});
+    save(); render();
+  });
+}
+function addSubCardOption(gid, scid){
+  var g = cur().weekly.taskGroups.find(function(x){return x.id===gid;});
+  var sc = g.subCards.find(function(x){return x.id===scid;});
+  showAddOptionModal('新增选项', function(data){
+    sc.options.push({
+      id: uid(),
+      name: data.name,
+      done: false,
+      count: data.count,
+      reward: data.reward,
+      loggedKey: null,
+      loggedAmount: 0
+    });
+    save(); render();
+  });
+}
+
+/* --- 商店购买事件 --- */
+function addShopItem(){
+  cur().weekly.shop.push({ id: uid(), name: '购买项', rewards: [{ count: 0, reward: '' }] });
+  save(); render();
+}
+function delShopItem(id){
+  customConfirm('删除该购买项？', function(){
+    cur().weekly.shop = cur().weekly.shop.filter(function(x){return x.id!==id;});
+    save(); render();
+  });
+}
+function addShopReward(itemId){
+  var item = cur().weekly.shop.find(function(x){return x.id===itemId;});
+  if(!item) return;
+  item.rewards.push({ count: 0, reward: '' });
+  save(); render();
+}
+function delShopReward(itemId, idx){
+  var item = cur().weekly.shop.find(function(x){return x.id===itemId;});
+  if(!item) return;
+  item.rewards.splice(idx, 1);
+  if(item.rewards.length === 0) item.rewards.push({ count: 0, reward: '' });
+  save(); render();
+}
+function setShopRewardCount(itemId, idx, val){
+  var item = cur().weekly.shop.find(function(x){return x.id===itemId;});
+  if(!item) return;
+  item.rewards[idx].count = Number(val)||0;
+  save();
+}
+function setShopRewardIcon(itemId, idx){
+  showRewardPicker(function(val){
+    var item = cur().weekly.shop.find(function(x){return x.id===itemId;});
+    if(!item) return;
+    item.rewards[idx].reward = val;
+    save(); render();
+  });
+}
+
+/* --- 特别板块事件 --- */
+function renameSpecial(){
+  customPrompt('重命名板块', cur().weekly.special.name, function(n){
+    if(n){ cur().weekly.special.name = n; save(); render(); }
+  });
+}
+function addSpecialItem(){
+  showAddOptionModal('新增项目', function(data){
+    cur().weekly.special.items.push({
+      id: uid(),
+      name: data.name,
+      done: false,
+      count: data.count,
+      reward: data.reward
+    });
+    save(); render();
+  });
+}
+function delSpecialItem(id){
+  cur().weekly.special.items = cur().weekly.special.items.filter(function(x){return x.id!==id;});
+  save(); render();
+}
+function toggleSpecialItem(id){
+  var item = cur().weekly.special.items.find(function(x){return x.id===id;});
+  if(item){ item.done = !item.done; save(); render(); }
+}
+function renameSpecialItem(id){
+  var item = cur().weekly.special.items.find(function(x){return x.id===id;});
+  customPrompt('重命名项目', item.name, function(n){
+    if(n){ item.name = n; save(); render(); }
+  });
+}
+function setSpecialItemCount(id, val){
+  var item = cur().weekly.special.items.find(function(x){return x.id===id;});
+  if(item){ item.count = Number(val)||0; save(); }
+}
+function setSpecialItemReward(id){
+  showRewardPicker(function(val){
+    var item = cur().weekly.special.items.find(function(x){return x.id===id;});
+    if(item){ item.reward = val; save(); render(); }
+  });
+}
+function renameShopItem(id){
+  var item = cur().weekly.shop.find(function(x){return x.id===id;});
+  if(!item) return;
+  customPrompt('重命名购买项', item.name || '购买项', function(n){
+    if(n){ item.name = n; save(); render(); }
+  });
+}
+/* 活动日历 */
+
+/* ==================== 活动 ==================== */
+function ensureActivityData(d){
+  if(!d.activity || !d.activity.ongoing){
+    d.activity = { ongoing:[], completed:[], otherIncome:[], calendarBg:'', calendarOpacity:0.1 };
+  }
+  if(!d.activity.otherIncome) d.activity.otherIncome = [];
+  if(!d.activity.completed) d.activity.completed = [];
+  if(d.activity.completedShowAll === undefined) d.activity.completedShowAll = false;
+  if(d.activity.otherShowAll === undefined) d.activity.otherShowAll = false;
+  if(d.activity.calendarBg === undefined) d.activity.calendarBg = '';
+  if(d.activity.calendarOpacity === undefined) d.activity.calendarOpacity = 0.1;
+
+  // 补全所有活动的基础字段
+  function normalizeActivity(a){
+    if(!a.id) a.id = uid();
+    if(!a.name) a.name = '未命名活动';
+    if(!a.start) a.start = new Date().toISOString().slice(0,10);
+    if(!a.end) a.end = a.start;
+    if(!a.color) a.color = '#ffffff';
+    if(!a.bgColor) a.bgColor = '#3b82f6';
+    if(!a.rewards) a.rewards = [{count:0, reward:''}];
+    a.rewards.forEach(function(r){
+      if(r.count === undefined) r.count = 0;
+      if(r.reward === undefined) r.reward = '';
+    });
+  }
+  d.activity.ongoing.forEach(normalizeActivity);
+  d.activity.completed.forEach(normalizeActivity);
+  d.activity.otherIncome.forEach(function(o){
+    if(!o.id) o.id = uid();
+    if(!o.name) o.name = '未命名收益';
+    if(o.count === undefined) o.count = 0;
+    if(o.reward === undefined) o.reward = '';
+  });
+}
+function renderActivityCalendar(d){
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth();
+  var firstDay = new Date(year, month, 1);
+  var lastDay = new Date(year, month + 1, 0);
+  var startWeekday = firstDay.getDay();
+  var daysInMonth = lastDay.getDate();
+
+  // 收集所有活动日期
+  var dateMap = {};
+  var allEvents = [];
+  d.activity.ongoing.forEach(function(a){
+    allEvents.push({ id:a.id, name:a.name, start:a.start, end:a.end, color:a.color||'#ffffff', bgColor:a.bgColor||'#3b82f6' });
+  });
+  d.activity.completed.forEach(function(a){
+    allEvents.push({ id:a.id, name:a.name, start:a.start, end:a.end, color:a.color||'#ffffff', bgColor:a.bgColor||'#8e8e93' });
+  });
+  allEvents.forEach(function(ev){
+    if(!ev.start || !ev.end) return;
+    var s = new Date(ev.start);
+    var e = new Date(ev.end);
+    var cur = new Date(s);
+    while(cur <= e){
+      var key = cur.getFullYear() + '-' + String(cur.getMonth()+1).padStart(2,'0') + '-' + String(cur.getDate()).padStart(2,'0');
+      if(!dateMap[key]) dateMap[key] = [];
+      dateMap[key].push(ev);
+      cur.setDate(cur.getDate() + 1);
+    }
+  });
+
+  var bgStyle = '';
+  if(d.activity.calendarBg){
+    bgStyle = 'background-image:url(' + d.activity.calendarBg + ');background-size:cover;background-position:center;';
+  }
+  var html = '<div style="border-radius:10px;padding:8px;' + bgStyle + 'background-color:rgba(0,0,0,' + d.activity.calendarOpacity + ');">';
+  html += '<div class="cal-grid">';
+  ['日','一','二','三','四','五','六'].forEach(function(dd){
+    html += '<div class="cal-head">' + dd + '</div>';
+  });
+  for(var i = 0; i < startWeekday; i++){
+    html += '<div class="cal-cell empty-cell"></div>';
+  }
+  for(var day = 1; day <= daysInMonth; day++){
+    var dateKey = year + '-' + String(month+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+    var events = dateMap[dateKey] || [];
+    var cls = 'cal-cell' + (events.length > 0 ? ' has-event' : '');
+    html += '<div class="' + cls + '" onclick="showDayEvents(\'' + dateKey + '\')" style="padding:2px 0;position:relative;overflow:hidden;">';
+    html += '<div class="cal-day" style="position:absolute;top:2px;left:4px;">' + day + '</div>';
+    if(events.length > 0){
+      html += '<div style="display:flex;flex-direction:column;width:100%;padding-top:14px;gap:2px;overflow:hidden;">';
+      events.slice(0, 2).forEach(function(ev){
+        var shortName = ev.name.length > 4 ? ev.name.slice(0, 4) + '..' : ev.name;
+        var fg = ev.color || '#ffffff';
+        var bg = ev.bgColor || '#3b82f6';
+        html += '<div class="cal-event-name" style="color:' + fg + ';background:' + bg + ';border-radius:2px;text-align:center;">' + shortName + '</div>';
+      });
+      if(events.length > 2){
+        html += '<div class="cal-more">+' + (events.length - 2) + '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  
+  html += '</div></div>';
+  return html;
+}
+
+function showDayEvents(dateKey){
+  var d = cur();
+  var list = [];
+  d.activity.ongoing.forEach(function(a){
+    if(a.start && a.end && dateKey >= a.start && dateKey <= a.end) list.push({ name:a.name, tag:'进行中' });
+  });
+  d.activity.completed.forEach(function(a){
+    if(a.start && a.end && dateKey >= a.start && dateKey <= a.end) list.push({ name:a.name, tag:'已结束' });
+  });
+  var msg = dateKey + '\n\n' + (list.length === 0 ? '当天无活动' : list.map(function(x){ return '· ' + x.name + '（' + x.tag + '）'; }).join('\n'));
+  alert(msg);
+}
+
+function renderActivityItem(a, isCompleted){
+  var html = '<div class="act-item">';
+
+    // 第一行：活动名 + 颜色按钮
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;">';
+  html += '<span class="act-name" ondblclick="editActivityName(\'' + a.id + '\',' + isCompleted + ',this)" style="color:' + (a.color||'#333') + ';flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (a.name || '未命名活动') + '</span>';
+  html += '<span style="cursor:pointer;padding:4px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px;background:' + (a.bgColor||'#3b82f6') + ';color:' + (a.color||'#fff') + ';" onclick="openActivityColorMenu(\'' + a.id + '\',' + isCompleted + ')">🎨 颜色</span>';
+  html += '</div>';
+
+    // 第二行：打钩完成 / 删除
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
+  if(!isCompleted){
+    html += '<div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="completeActivity(\'' + a.id + '\')">';
+    html += '<div style="width:20px;height:20px;border-radius:4px;border:2px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;"></div>';
+    html += '<span style="font-size:13px;color:var(--sub);">完成后打钩</span>';
+    html += '</div>';
+  } else {
+    html += '<div style="display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="uncompleteActivity(\'' + a.id + '\')">';
+    html += '<div style="width:20px;height:20px;border-radius:4px;border:2px solid var(--done);background:var(--done);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;">✓</div>';
+    html += '<span style="font-size:13px;color:var(--done);">已完成（点击撤销）</span>';
+    html += '</div>';
+  }
+  html += '<button class="del-btn" style="padding:2px 8px;" onclick="delActivity(\'' + a.id + '\',' + isCompleted + ')">×</button>';
+  html += '</div>';
+
+  // 第三行：日期
+  html += '<div class="act-dates">';
+  html += '<input type="date" value="' + (a.start||'') + '" onchange="setActivityDate(\'' + a.id + '\',' + isCompleted + ',\'start\',this.value)"> 至 ';
+  html += '<input type="date" value="' + (a.end||'') + '" onchange="setActivityDate(\'' + a.id + '\',' + isCompleted + ',\'end\',this.value)">';
+  html += '</div>';
+
+  // 第四行：奖励
+  html += '<div class="act-rewards">';
+  (a.rewards || []).forEach(function(r, idx){
+    html += '<div class="wt-reward-block">';
+    html += '<input type="number" value="' + (r.count || 0) + '" onchange="setActivityRewardCount(\'' + a.id + '\',' + isCompleted + ',' + idx + ',this.value)">';
+    html += '<span class="r-icon" onclick="setActivityRewardIcon(\'' + a.id + '\',' + isCompleted + ',' + idx + ')">' + (r.reward || '选图标') + '</span>';
+    html += '<button class="r-del" onclick="delActivityReward(\'' + a.id + '\',' + isCompleted + ',' + idx + ')">×</button>';
+    html += '</div>';
+  });
+  html += '<button class="btn ghost" style="padding:4px 10px;font-size:13px;" onclick="addActivityReward(\'' + a.id + '\',' + isCompleted + ')">+ 奖励</button>';
+  html += '</div></div>';
+  return html;
+}
+
+function findActivity(id, isCompleted){
+  var list = isCompleted ? cur().activity.completed : cur().activity.ongoing;
+  return list.find(function(x){ return x.id === id; });
+}
+
+function addActivity(){
+  showAddActivityModal(function(data){
+    var today = new Date().toISOString().slice(0,10);
+    cur().activity.ongoing.push({
+      id: uid(),
+      name: data.name,
+      start: today,
+      end: today,
+      color: data.color,
+      bgColor: data.bgColor,
+      rewards: [{count:0, reward:''}]
+    });
+    save(); render();
+  });
+}
+
+function showAddActivityModal(callback){
+  closeModal('addActivityModal');
+  var overlay = document.createElement('div'); overlay.id = 'addActivityModal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px;padding:16px;width:100%;max-width:400px;box-sizing:border-box;';
+  var title = document.createElement('div'); title.innerText = '新建活动'; title.style.cssText = 'font-weight:600;margin-bottom:12px;font-size:15px;';
+  box.appendChild(title);
+
+  var nameLabel = document.createElement('div'); nameLabel.innerText = '活动名称'; nameLabel.style.cssText = 'font-size:13px;color:#666;margin-bottom:4px;';
+  var nameInput = document.createElement('input'); nameInput.type = 'text';
+  nameInput.style.cssText = 'width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;margin-bottom:10px;';
+  box.appendChild(nameLabel); box.appendChild(nameInput);
+
+  var colorLabel = document.createElement('div'); colorLabel.innerText = '字体颜色'; colorLabel.style.cssText = 'font-size:13px;color:#666;margin-bottom:4px;';
+  var colorInput = document.createElement('input'); colorInput.type = 'text'; colorInput.value = '#ffffff';
+  colorInput.style.cssText = 'width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;margin-bottom:10px;';
+  box.appendChild(colorLabel); box.appendChild(colorInput);
+
+  var bgLabel = document.createElement('div'); bgLabel.innerText = '背景颜色'; bgLabel.style.cssText = 'font-size:13px;color:#666;margin-bottom:4px;';
+  var bgInput = document.createElement('input'); bgInput.type = 'text'; bgInput.value = '#3b82f6';
+  bgInput.style.cssText = 'width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;margin-bottom:10px;';
+  box.appendChild(bgLabel); box.appendChild(bgInput);
+
+  var btns = document.createElement('div'); btns.style.cssText = 'display:flex;gap:10px;margin-top:10px;';
+  var cancelBtn = document.createElement('button'); cancelBtn.innerText = '取消';
+  cancelBtn.style.cssText = 'flex:1;padding:10px;background:#f0f0f0;color:#333;border:none;border-radius:8px;font-size:15px;';
+  cancelBtn.onclick = function(){ closeModal('addActivityModal'); };
+  var okBtn = document.createElement('button'); okBtn.innerText = '确定';
+  okBtn.style.cssText = 'flex:1;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;';
+  okBtn.onclick = function(){
+    var name = nameInput.value.trim();
+    if(!name){ alert('请输入活动名称'); return; }
+    closeModal('addActivityModal');
+    callback({ name:name, color:colorInput.value, bgColor:bgInput.value });
+  };
+  btns.appendChild(cancelBtn); btns.appendChild(okBtn);
+  box.appendChild(btns);
+
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+function renameActivity(id, isCompleted){
+  var a = findActivity(id, isCompleted); if(!a) return;
+  customPrompt('重命名活动', a.name, function(n){ if(n){ a.name = n; save(); render(); } });
+}
+function delActivity(id, isCompleted){
+  customConfirm('删除该活动？', function(){
+    if(isCompleted) cur().activity.completed = cur().activity.completed.filter(function(x){return x.id!==id;});
+    else cur().activity.ongoing = cur().activity.ongoing.filter(function(x){return x.id!==id;});
+    save(); render();
+  });
+}
+function completeActivity(id){
+  var a = findActivity(id, false); if(!a) return;
+  // 完成时，把奖励计算进资源
+  a.loggedRewards = [];
+  a.rewards.forEach(function(r){
+    var rk = getResourceKeyFromReward(r.reward);
+    var count = Number(r.count) || 0;
+    if(rk && count > 0){
+      addResourceLog(rk, count);
+      a.loggedRewards.push({ key: rk, amount: count });
+    }
+  });
+  cur().activity.ongoing = cur().activity.ongoing.filter(function(x){return x.id!==id;});
+  cur().activity.completed.unshift(a);
+  save(); render();
+}
+
+function uncompleteActivity(id){
+  var a = cur().activity.completed.find(function(x){return x.id===id;});
+  if(!a) return;
+  // 退回时，把之前加的奖励扣回
+  if(a.loggedRewards){
+    a.loggedRewards.forEach(function(lr){
+      addResourceLog(lr.key, -lr.amount);
+    });
+    a.loggedRewards = [];
+  }
+  cur().activity.completed = cur().activity.completed.filter(function(x){return x.id!==id;});
+  cur().activity.ongoing.unshift(a);
+  save(); render();
+}
+function setActivityDate(id, isCompleted, field, val){
+  var a = findActivity(id, isCompleted); if(!a) return;
+  a[field] = val; save(); render();
+}
+function addActivityReward(id, isCompleted){
+  var a = findActivity(id, isCompleted); if(!a) return;
+  a.rewards.push({ count:0, reward:'' }); save(); render();
+}
+function delActivityReward(id, isCompleted, idx){
+  var a = findActivity(id, isCompleted); if(!a) return;
+  a.rewards.splice(idx, 1); save(); render();
+}
+function setActivityRewardCount(id, isCompleted, idx, val){
+  var a = findActivity(id, isCompleted); if(!a) return;
+  a.rewards[idx].count = Number(val)||0; save();
+}
+function setActivityRewardIcon(id, isCompleted, idx){
+  showRewardPicker(function(val){
+    var a = findActivity(id, isCompleted); if(!a) return;
+    a.rewards[idx].reward = val; save(); render();
+  });
+}
+function toggleActivityMore(type){
+  if(type === 'completed') cur().activity.completedShowAll = !cur().activity.completedShowAll;
+  else cur().activity.otherShowAll = !cur().activity.otherShowAll;
+  save(); render();
+}
+
+/* 其他收益 */
+function addOtherIncome(){
+  cur().activity.otherIncome.unshift({ id:uid(), name:'新收益', count:0, reward:'' });
+  save(); render();
+}
+function delOtherIncome(id){
+  cur().activity.otherIncome = cur().activity.otherIncome.filter(function(x){return x.id!==id;});
+  save(); render();
+}
+function renameOtherIncome(id){
+  var o = cur().activity.otherIncome.find(function(x){return x.id===id;}); if(!o) return;
+  customPrompt('重命名', o.name, function(n){ if(n){ o.name = n; save(); render(); } });
+}
+function setOtherIncomeCount(id, val){
+  var o = cur().activity.otherIncome.find(function(x){return x.id===id;}); if(!o) return;
+  o.count = Number(val)||0; save();
+}
+function setOtherIncomeReward(id){
+  showRewardPicker(function(val){
+    var o = cur().activity.otherIncome.find(function(x){return x.id===id;}); if(!o) return;
+    o.reward = val; save(); render();
+  });
+}
+
+/* 日历背景 */
+function setCalendarBg(){
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.onchange = function(e){
+    var file = e.target.files[0]; if(!file) return;
+    if(file.size > 1024 * 300){ alert('图片不能超过300KB'); return; }
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      cur().activity.calendarBg = evt.target.result;
+      save(); render();
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+/* ==================== 设置功能 ==================== */
+function setGameDays(val){
+  DB.settings.gameDays = Number(val) || 0;
+  save(); render();
+}
+function toggleAutoCollapse(checked){
+  DB.settings.autoCollapse = checked;
+  save(); render();
+}
+function setReminder(idx, val){
+  DB.settings.reminders[idx] = val;
+  save();
+}
+function testReminder(){
+  alert('测试提醒：这是一个模拟的打卡提醒弹窗。打包成APP后，如果原生层支持，会弹出系统通知栏。');
+}
+function setTheme(theme){
+  DB.settings.theme = theme;
+  save();
+  applyTheme();
+  render();
+}
+function applyTheme(){
+  var t = DB.settings.theme || 'light';
+  var root = document.documentElement;
+  if(t === 'dark'){
+    root.style.setProperty('--bg', '#1c1c1e');
+    root.style.setProperty('--card', '#2c2c2e');
+    root.style.setProperty('--text', '#ffffff');
+    root.style.setProperty('--sub', '#8e8e93');
+    root.style.setProperty('--line', '#3a3a3c');
+  } else if(t === 'green'){
+    root.style.setProperty('--bg', '#f1f8e9');
+    root.style.setProperty('--card', '#ffffff');
+    root.style.setProperty('--text', '#1b5e20');
+    root.style.setProperty('--sub', '#558b2f');
+    root.style.setProperty('--line', '#c8e6c9');
+  } else {
+    root.style.setProperty('--bg', '#f5f5f7');
+    root.style.setProperty('--card', '#ffffff');
+    root.style.setProperty('--text', '#1c1c1e');
+    root.style.setProperty('--sub', '#8e8e93');
+    root.style.setProperty('--line', '#e5e5ea');
+  }
+    // 应用全局背景
+    var bg = document.getElementById('appBg');
+  if(!bg){
+    bg = document.createElement('div');
+    bg.id = 'appBg';
+    document.body.insertBefore(bg, document.body.firstChild);
+  }
+  if(DB.settings.bgImage){
+    bg.style.backgroundImage = 'url(' + DB.settings.bgImage + ')';
+    bg.style.opacity = DB.settings.bgOpacity !== undefined ? DB.settings.bgOpacity : 0.3;
+    bg.style.filter = 'blur(' + (DB.settings.bgBlur || 0) + 'px)';
+  } else {
+    bg.style.backgroundImage = '';
+    bg.style.opacity = 0;
+  }
+}
+function exportData(){
+  var str = JSON.stringify(DB, null, 2);
+  var blob = new Blob([str], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'checkin_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importData(e){
+  var f = e.target.files[0];
+  if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    try{
+      DB = JSON.parse(r.result);
+      save(); applyTheme(); render();
+      alert('导入成功！');
+    }catch(err){ alert('文件格式错误'); }
+  };
+  r.readAsText(f);
+}
+function toggleDoneCollapse(sid){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  sec.showDone = !sec.showDone;
+  save(); applyTheme();
+render();
+}
+function recordCheckInToday(){
+  var today = new Date().toISOString().slice(0,10);
+  if(DB.settings.lastCheckInDate === today) return;
+  DB.settings.lastCheckInDate = today;
+  DB.settings.checkInDays = (DB.settings.checkInDays || 0) + 1;
+}
+function toggleShopDone(id){
+  var item = cur().weekly.shop.find(function(x){return x.id===id;});
+  if(!item) return;
+  
+  if(!item.done){
+    item.done = true;
+    item.loggedRewards = [];
+    item.rewards.forEach(function(r){
+      var rk = getResourceKeyFromReward(r.reward);
+      var count = Number(r.count) || 0;
+      if(rk && count > 0){
+        addResourceLog(rk, count);
+        item.loggedRewards.push({ key: rk, amount: count });
+      }
+    });
+  } else {
+    item.done = false;
+    if(item.loggedRewards){
+      item.loggedRewards.forEach(function(lr){
+        addResourceLog(lr.key, -lr.amount);
+      });
+      item.loggedRewards = [];
+    }
+  }
+  save(); render();
+}
+function toggleOtherIncomeDone(id){
+  var o = cur().activity.otherIncome.find(function(x){return x.id===id;});
+  if(!o) return;
+  var rk = getResourceKeyFromReward(o.reward);
+  var count = Number(o.count) || 0;
+
+  if(!o.done){
+    o.done = true;
+    if(rk && count > 0){
+      addResourceLog(rk, count);
+      o.loggedKey = rk;
+      o.loggedAmount = count;
+    }
+  } else {
+    o.done = false;
+    if(o.loggedKey && o.loggedAmount){
+      addResourceLog(o.loggedKey, -o.loggedAmount);
+      o.loggedKey = null;
+      o.loggedAmount = 0;
+    }
+  }
+  save(); render();
+}
+function getResourceKeyFromReward(reward){
+  if(!reward) return null;
+  for(var i = 0; i < RES_KEYS.length; i++){
+    if(reward.indexOf(RES_KEYS[i]) > -1) return RES_KEYS[i];
+  }
+  return null;
+}
+function setWeeklyOptionCount(gid, oid, scid, val){
+  var o = findWeeklyOption(gid, oid, scid);
+  if(!o) return;
+  o.count = Number(val)||0;
+  save(); render();
+}
+function setWeeklyOptionReward(gid, oid, scid){
+  showRewardPicker(function(val){
+    var o = findWeeklyOption(gid, oid, scid);
+    if(o){ o.reward = val; save(); render(); }
+  });
+}
+function showAddTaskModal(sid, callback){
+  var old = document.getElementById('addTaskModal'); if(old) old.parentNode.removeChild(old);
+  var overlay = document.createElement('div'); overlay.id = 'addTaskModal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px;padding:16px;width:100%;max-width:400px;box-sizing:border-box;';
+
+  var title = document.createElement('div'); title.innerText = '新增任务';
+  title.style.cssText = 'font-weight:600;margin-bottom:12px;font-size:15px;';
+  box.appendChild(title);
+
+  // 名称
+  var nameLabel = document.createElement('div'); nameLabel.innerText = '任务名称'; nameLabel.style.cssText = 'font-size:13px;color:#666;margin-bottom:4px;';
+  var nameInput = document.createElement('input'); nameInput.type = 'text';
+  nameInput.style.cssText = 'width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;margin-bottom:10px;';
+  box.appendChild(nameLabel); box.appendChild(nameInput);
+
+  // 奖励选择
+  var rewardLabel = document.createElement('div'); rewardLabel.innerText = '奖励（可选）'; rewardLabel.style.cssText = 'font-size:13px;color:#666;margin-bottom:4px;';
+  box.appendChild(rewardLabel);
+
+  var rewardRow = document.createElement('div'); rewardRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;';
+  var presets = [
+    {label:'无', val:''},
+    {label:'💎 勾玉', val:'💎 勾玉'},
+    {label:'🎫 蓝票', val:'🎫 蓝票'},
+    {label:'🥚 黑蛋', val:'🥚 黑蛋'},
+    {label:'🖤 黑碎', val:'🖤 黑碎'}
+  ];
+  var selectedReward = '';
+  var rewardBtns = [];
+  presets.forEach(function(p){
+    var btn = document.createElement('button');
+    btn.innerText = p.label;
+    btn.style.cssText = 'padding:6px 10px;border-radius:6px;border:1px solid #ddd;background:#f5f5f7;font-size:13px;cursor:pointer;';
+    if(p.val === ''){ btn.style.background = '#3b82f6'; btn.style.color = '#fff'; btn.style.borderColor = '#3b82f6'; }
+    btn.onclick = function(){
+      selectedReward = p.val;
+      rewardBtns.forEach(function(b){ b.style.background='#f5f5f7'; b.style.color='#333'; b.style.borderColor='#ddd'; });
+      btn.style.background='#3b82f6'; btn.style.color='#fff'; btn.style.borderColor='#3b82f6';
+    };
+    rewardBtns.push(btn);
+    rewardRow.appendChild(btn);
+  });
+  box.appendChild(rewardRow);
+
+  // 数量
+  var countLabel = document.createElement('div'); countLabel.innerText = '数量'; countLabel.style.cssText = 'font-size:13px;color:#666;margin-bottom:4px;';
+  var countInput = document.createElement('input'); countInput.type = 'number'; countInput.value = '0';
+  countInput.style.cssText = 'width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;margin-bottom:10px;';
+  box.appendChild(countLabel); box.appendChild(countInput);
+
+  // 一键完成开关（只对第一板块显示）
+  var noAutoCheckbox = null;
+  if(sid === 's1'){
+    var chkRow = document.createElement('div');
+    chkRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;';
+    noAutoCheckbox = document.createElement('input'); noAutoCheckbox.type = 'checkbox';
+    var chkLabel = document.createElement('span'); chkLabel.innerText = '不允许一键完成（点🔒图标可切换）'; chkLabel.style.cssText = 'font-size:13px;color:#666;';
+    chkRow.appendChild(noAutoCheckbox); chkRow.appendChild(chkLabel);
+    box.appendChild(chkRow);
+  }
+
+  // 按钮
+  var btns = document.createElement('div'); btns.style.cssText = 'display:flex;gap:10px;margin-top:10px;';
+  var cancelBtn = document.createElement('button'); cancelBtn.innerText = '取消';
+  cancelBtn.style.cssText = 'flex:1;padding:10px;background:#f0f0f0;color:#333;border:none;border-radius:8px;font-size:15px;';
+  cancelBtn.onclick = function(){ overlay.parentNode.removeChild(overlay); };
+  var okBtn = document.createElement('button'); okBtn.innerText = '确定';
+  okBtn.style.cssText = 'flex:1;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;';
+  okBtn.onclick = function(){
+    var name = nameInput.value.trim();
+    if(!name){ alert('请输入任务名称'); return; }
+    var result = {
+      name: name,
+      reward: selectedReward,
+      count: Number(countInput.value) || 0,
+      noAutoComplete: noAutoCheckbox ? noAutoCheckbox.checked : false
+    };
+    overlay.parentNode.removeChild(overlay);
+    if(callback) callback(result);
+  };
+  btns.appendChild(cancelBtn); btns.appendChild(okBtn);
+  box.appendChild(btns);
+
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+function toggleAutoComplete(sid, tid){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  var t = sec.tasks.find(function(t){return t.id===tid;});
+  t.noAutoComplete = !t.noAutoComplete;
+  save(); render();
+}
+function formatDate(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function getHistoryPeriodLabel(){
+  var p = historyView.period;
+  var offset = historyView.offset;
+  var now = new Date();
+  if(p === 'day'){
+    var d = new Date(now); d.setDate(d.getDate() + offset);
+    var label = formatDate(d);
+    if(offset === 0) label += '（今天）';
+    else if(offset === -1) label += '（昨天）';
+    return label;
+  } else if(p === 'week'){
+    var start = new Date(now);
+    start.setDate(now.getDate() - now.getDay() + 1 + offset*7);
+    start.setHours(0,0,0,0);
+    var end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    var l = formatDate(start) + ' ~ ' + formatDate(end);
+    if(offset === 0) l += '（本周）';
+    return l;
+  } else {
+    var m = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    var l = m.getFullYear() + '年' + (m.getMonth()+1) + '月';
+    if(offset === 0) l += '（本月）';
+    return l;
+  }
+}
+
+function getHistoryDateRange(){
+  var p = historyView.period;
+  var offset = historyView.offset;
+  var now = new Date();
+  var start, end;
+  if(p === 'day'){
+    start = new Date(now); start.setDate(now.getDate() + offset); start.setHours(0,0,0,0);
+    end = new Date(start); end.setHours(23,59,59,999);
+  } else if(p === 'week'){
+    start = new Date(now);
+    start.setDate(now.getDate() - now.getDay() + 1 + offset*7);
+    start.setHours(0,0,0,0);
+    end = new Date(start);
+    end.setDate(start.getDate() + 6); end.setHours(23,59,59,999);
+  } else {
+    start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0, 23,59,59,999);
+  }
+  return { start: start, end: end };
+}
+
+function getResourceSumInRange(key, start, end){
+  var d = cur();
+  var res = d.resources[key];
+  if(!res || !res.logs) return 0;
+  var sum = 0;
+  res.logs.forEach(function(log){
+    var ld = new Date(log.date + 'T00:00:00');
+    if(ld >= start && ld <= end) sum += log.amount;
+  });
+  return sum;
+}
+function toggleHistoryInline(){
+  var d = cur();
+  d.historyOpen = !d.historyOpen;
+  save(); render();
+}
+
+function renderHistoryInline(d){
+  var p = historyView.period;
+  var offset = historyView.offset;
+  var range = getHistoryDateRange();
+  var label = getHistoryPeriodLabel();
+
+  var html = '<div style="margin-top:12px;padding:10px;background:#fafafa;border-radius:10px;border:1px solid var(--line);">';
+
+  // 周期切换
+  html += '<div style="display:flex;gap:6px;margin-bottom:8px;">';
+  ['day','week','month'].forEach(function(pp){
+    var active = p === pp;
+    var txt = pp === 'day' ? '日' : (pp === 'week' ? '周' : '月');
+    html += '<button onclick="setHistoryPeriod(\'' + pp + '\')" style="flex:1;padding:6px;border-radius:6px;border:1px solid ' + (active?'#3b82f6':'#ddd') + ';background:' + (active?'#3b82f6':'#fff') + ';color:' + (active?'#fff':'#333') + ';font-size:13px;cursor:pointer;">' + txt + '</button>';
+  });
+  html += '</div>';
+
+  // 时间选择（点击可弹出日期选择器）
+  html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">';
+  html += '<button onclick="shiftHistory(-1)" style="padding:4px 10px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;font-size:12px;">◀</button>';
+  html += '<div onclick="openDatePicker()" style="flex:1;text-align:center;font-size:12px;font-weight:600;padding:6px;background:#fff;border:1px solid #ddd;border-radius:6px;cursor:pointer;user-select:none;">📅 ' + label + '</div>';
+  html += '<button onclick="shiftHistory(1)" style="padding:4px 10px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;font-size:12px;">▶</button>';
+  html += '<button onclick="resetHistory()" style="padding:4px 10px;border:1px solid #ddd;background:#fff;border-radius:6px;cursor:pointer;font-size:12px;">恢复</button>';
+  html += '</div>';
+
+  // 资源列表
+  var totalSum = 0;
+  RES_KEYS.forEach(function(k){
+    var res = d.resources[k] || { icon:'', color:'#333' };
+    var sum = getResourceSumInRange(k, range.start, range.end);
+    totalSum += sum;
+    var iconHtml = (res.icon && res.icon.indexOf('data:image') === 0)
+      ? '<img src="' + res.icon + '" style="width:16px;height:16px;vertical-align:middle;margin-right:5px;object-fit:contain;">'
+      : '<span style="margin-right:5px;">' + (res.icon || k.charAt(0)) + '</span>';
+    html += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px;">';
+    html += '<span style="color:' + (res.color||'#333') + ';">' + iconHtml + k + '</span>';
+    html += '<span style="font-weight:600;color:' + (sum>0?'#34c759':'#8e8e93') + ';">' + (sum>0?'+':'') + sum + '</span>';
+    html += '</div>';
+  });
+
+  html += '<div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:13px;font-weight:600;">';
+  html += '<span>总资源获取</span><span style="color:#3b82f6;">' + (totalSum>0?'+':'') + totalSum + '</span>';
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+function setHistoryPeriod(p){
+  historyView.period = p;
+  historyView.offset = 0;
+  save(); render();
+}
+function shiftHistory(delta){
+  historyView.offset += delta;
+  render();
+}
+function resetHistory(){
+  historyView.offset = 0;
+  render();
+}
+function openDatePicker(){
+  var p = historyView.period;
+  var now = new Date();
+  // 根据当前周期和偏移，计算默认选中日期
+  var defaultDate = now;
+  if(p === 'day'){
+    defaultDate = new Date(now); defaultDate.setDate(now.getDate() + historyView.offset);
+  } else if(p === 'week'){
+    defaultDate = new Date(now); defaultDate.setDate(now.getDate() - now.getDay() + 1 + historyView.offset*7);
+  } else {
+    defaultDate = new Date(now.getFullYear(), now.getMonth() + historyView.offset, 1);
+  }
+
+  var input = document.createElement('input');
+  input.type = (p === 'month') ? 'month' : 'date';
+  var valStr = (p === 'month')
+    ? (defaultDate.getFullYear() + '-' + String(defaultDate.getMonth()+1).padStart(2,'0'))
+    : formatDate(defaultDate);
+  input.value = valStr;
+  input.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+
+  input.onchange = function(){
+    if(!input.value){ document.body.removeChild(input); return; }
+    if(p === 'day'){
+      var picked = new Date(input.value + 'T00:00:00');
+      var today = new Date(); today.setHours(0,0,0,0);
+      var diff = Math.round((picked - today) / 86400000);
+      historyView.offset = diff;
+    } else if(p === 'week'){
+      var picked = new Date(input.value + 'T00:00:00');
+      var today = new Date(); today.setHours(0,0,0,0);
+      var monday = new Date(today); monday.setDate(today.getDate() - today.getDay() + 1);
+      var pickedMonday = new Date(picked); pickedMonday.setDate(picked.getDate() - picked.getDay() + 1);
+      var weekDiff = Math.round((pickedMonday - monday) / (86400000*7));
+      historyView.offset = weekDiff;
+    } else {
+      var parts = input.value.split('-');
+      var pickedMonth = parseInt(parts[0],10) * 12 + parseInt(parts[1],10);
+      var nowMonth = now.getFullYear() * 12 + (now.getMonth()+1);
+      historyView.offset = pickedMonth - nowMonth;
+    }
+    document.body.removeChild(input);
+    save(); render();
+  };
+
+  document.body.appendChild(input);
+  // 移动端兼容
+  if(input.showPicker){ try{ input.showPicker(); } catch(e){ input.click(); } }
+  else { input.click(); }
+}
+function showAddOptionModal(titleText, callback){
+  var old = document.getElementById('addOptionModal'); if(old) old.parentNode.removeChild(old);
+  var overlay = document.createElement('div'); overlay.id = 'addOptionModal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px;padding:16px;width:100%;max-width:400px;box-sizing:border-box;';
+
+  var title = document.createElement('div'); title.innerText = titleText;
+  title.style.cssText = 'font-weight:600;margin-bottom:12px;font-size:15px;';
+  box.appendChild(title);
+
+  // 名称
+  var nameLabel = document.createElement('div'); nameLabel.innerText = '名称'; nameLabel.style.cssText = 'font-size:13px;color:#666;margin-bottom:4px;';
+  var nameInput = document.createElement('input'); nameInput.type = 'text';
+  nameInput.style.cssText = 'width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;margin-bottom:10px;';
+  box.appendChild(nameLabel); box.appendChild(nameInput);
+
+  // 奖励
+  var rewardLabel = document.createElement('div'); rewardLabel.innerText = '奖励（可选）'; rewardLabel.style.cssText = 'font-size:13px;color:#666;margin-bottom:4px;';
+  box.appendChild(rewardLabel);
+
+  var rewardRow = document.createElement('div'); rewardRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;';
+  var presets = [
+    {label:'无', val:''},
+    {label:'💎 勾玉', val:'💎 勾玉'},
+    {label:'🎫 蓝票', val:'🎫 蓝票'},
+    {label:'🥚 黑蛋', val:'🥚 黑蛋'},
+    {label:'🖤 黑碎', val:'🖤 黑碎'}
+  ];
+  var selectedReward = '';
+  var rewardBtns = [];
+  presets.forEach(function(p){
+    var btn = document.createElement('button');
+    btn.innerText = p.label;
+    btn.style.cssText = 'padding:6px 10px;border-radius:6px;border:1px solid #ddd;background:#f5f5f7;font-size:13px;cursor:pointer;';
+    if(p.val === ''){ btn.style.background = '#3b82f6'; btn.style.color = '#fff'; btn.style.borderColor = '#3b82f6'; }
+    btn.onclick = function(){
+      selectedReward = p.val;
+      rewardBtns.forEach(function(b){ b.style.background='#f5f5f7'; b.style.color='#333'; b.style.borderColor='#ddd'; });
+      btn.style.background='#3b82f6'; btn.style.color='#fff'; btn.style.borderColor='#3b82f6';
+    };
+    rewardBtns.push(btn);
+    rewardRow.appendChild(btn);
+  });
+  box.appendChild(rewardRow);
+
+  // 数量
+  var countLabel = document.createElement('div'); countLabel.innerText = '数量'; countLabel.style.cssText = 'font-size:13px;color:#666;margin-bottom:4px;';
+  var countInput = document.createElement('input'); countInput.type = 'number'; countInput.value = '0';
+  countInput.style.cssText = 'width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box;margin-bottom:10px;';
+  box.appendChild(countLabel); box.appendChild(countInput);
+
+  // 按钮
+  var btns = document.createElement('div'); btns.style.cssText = 'display:flex;gap:10px;margin-top:10px;';
+  var cancelBtn = document.createElement('button'); cancelBtn.innerText = '取消';
+  cancelBtn.style.cssText = 'flex:1;padding:10px;background:#f0f0f0;color:#333;border:none;border-radius:8px;font-size:15px;';
+  cancelBtn.onclick = function(){ overlay.parentNode.removeChild(overlay); };
+  var okBtn = document.createElement('button'); okBtn.innerText = '确定';
+  okBtn.style.cssText = 'flex:1;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;';
+  okBtn.onclick = function(){
+    var name = nameInput.value.trim();
+    if(!name){ alert('请输入名称'); return; }
+    var result = {
+      name: name,
+      reward: selectedReward,
+      count: Number(countInput.value) || 0
+    };
+    overlay.parentNode.removeChild(overlay);
+    if(callback) callback(result);
+  };
+  btns.appendChild(cancelBtn); btns.appendChild(okBtn);
+  box.appendChild(btns);
+
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+// 通用：把元素变成输入框，编辑完成后回写
+function inlineEdit(el, defaultValue, onSave){
+  var oldText = el.innerText || el.textContent;
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.value = defaultValue;
+  input.className = 'inline-edit';
+  el.innerHTML = '';
+  el.appendChild(input);
+  input.focus();
+  input.select();
+  
+  var saved = false;
+  function save(){
+    if(saved) return;
+    saved = true;
+    var val = input.value.trim();
+    if(val && val !== defaultValue){
+      onSave(val);
+    } else {
+      el.innerText = oldText;
+    }
+  }
+  input.onblur = save;
+  input.onkeydown = function(e){
+    if(e.key === 'Enter'){ input.blur(); }
+    if(e.key === 'Escape'){ saved = true; el.innerText = oldText; }
+  };
+}
+
+// 板块名原地编辑
+function editSectionName(sid, el){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  inlineEdit(el, sec.name, function(val){
+    sec.name = val; save(); render();
+  });
+}
+
+// 任务名原地编辑
+function editTaskName(sid, tid, el){
+  var sec = cur().daily.find(function(s){return s.id===sid;});
+  var t = sec.tasks.find(function(t){return t.id===tid;});
+  inlineEdit(el, t.name, function(val){
+    t.name = val; save(); render();
+  });
+}
+/* ---- 周常原地编辑 ---- */
+function editWeeklyGroupName(gid, el){
+  var g = cur().weekly.taskGroups.find(function(x){return x.id===gid;});
+  inlineEdit(el, g.name, function(val){ g.name = val; save(); render(); });
+}
+function editWeeklyOptionName(gid, oid, scid, el){
+  var o = findWeeklyOption(gid, oid, scid);
+  if(!o) return;
+  inlineEdit(el, o.name, function(val){ o.name = val; save(); render(); });
+}
+function editSubCardName(gid, scid, el){
+  var g = cur().weekly.taskGroups.find(function(x){return x.id===gid;});
+  var sc = g.subCards.find(function(x){return x.id===scid;});
+  inlineEdit(el, sc.name, function(val){ sc.name = val; save(); render(); });
+}
+function editShopItemName(id, el){
+  var item = cur().weekly.shop.find(function(x){return x.id===id;});
+  if(!item) return;
+  inlineEdit(el, item.name || '购买项', function(val){ item.name = val; save(); render(); });
+}
+function editSpecialName(el){
+  var sp = cur().weekly.special;
+  inlineEdit(el, sp.name, function(val){ sp.name = val; save(); render(); });
+}
+function editSpecialItemName(id, el){
+  var item = cur().weekly.special.items.find(function(x){return x.id===id;});
+  if(!item) return;
+  inlineEdit(el, item.name, function(val){ item.name = val; save(); render(); });
+}
+
+/* ---- 活动原地编辑 ---- */
+function editActivityName(id, isCompleted, el){
+  var a = findActivity(id, isCompleted);
+  if(!a) return;
+  inlineEdit(el, a.name, function(val){ a.name = val; save(); render(); });
+}
+function editOtherIncomeName(id, el){
+  var o = cur().activity.otherIncome.find(function(x){return x.id===id;});
+  if(!o) return;
+  inlineEdit(el, o.name, function(val){ o.name = val; save(); render(); });
+}
+function renderResourcePanel(){
+  var d = cur();
+  if(!d.resources) d.resources = defaultRes();
+  var html = '';
+
+  html += '<div class="section">';
+  html += '<div class="section-title"><span>资源汇总</span>';
+  html += '<div style="display:flex;gap:6px;">';
+  html += '<button class="btn ghost" style="padding:4px 10px;font-size:12px;" onclick="toggleHistoryInline()">' + (d.historyOpen ? '收起 ▲' : '历史 ▼') + '</button>';
+  html += '<button class="btn ghost" style="padding:4px 10px;font-size:12px;" onclick="editResources()">修改总数</button>';
+  html += '</div></div>';
+
+  html += '<div class="res-grid">';
+  RES_KEYS.forEach(function(k){
+    var res = d.resources[k] || { total:0, icon:'', color:'#333333', logs:[] };
+    var todayAdd = getResourceSum(k, 'today');
+    var addHtml = todayAdd > 0 ? '<span class="add">+' + todayAdd + '</span>' : '';
+    var iconHtml = (res.icon && res.icon.indexOf('data:image') === 0)
+      ? '<img src="' + res.icon + '" style="width:28px;height:28px;object-fit:contain;">'
+      : (res.icon || k.charAt(0));
+    html += '<div class="res-item" onclick="openResourceMenu(\'' + k + '\')">';
+    html += '<div class="res-icon">' + iconHtml + '</div>';
+    html += '<div class="res-name" style="color:' + (res.color||'#333') + ';">' + k + '</div>';
+    html += '<div class="res-val">' + (res.total||0) + addHtml + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  if(d.historyOpen){
+    html += renderHistoryInline(d);
+  }
+
+  html += '<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line);">';
+  RES_KEYS.forEach(function(k){
+    var res = d.resources[k] || { icon:'', color:'#333' };
+    var iconHtml = (res.icon && res.icon.indexOf('data:image') === 0)
+      ? '<img src="' + res.icon + '" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;object-fit:contain;">'
+      : '<span style="margin-right:4px;">' + (res.icon || k.charAt(0)) + '</span>';
+    var todaySum = getResourceSum(k, 'today');
+    var weekSum = getResourceSum(k, 'week');
+    var monthSum = getResourceSum(k, 'month');
+    html += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;color:var(--sub);">';
+    html += '<span>' + iconHtml + k + '</span>';
+    html += '<span>今日:<b style="color:var(--accent);margin-left:4px;">' + todaySum + '</b> 本周:<b style="color:var(--accent);margin-left:4px;">' + weekSum + '</b> 本月:<b style="color:var(--accent);margin-left:4px;">' + monthSum + '</b></span>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+function changeRecordIcon(type){
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.onchange = function(e){
+    var file = e.target.files[0]; if(!file) return;
+    if(file.size > 1024 * 100){ alert('图片不能超过100KB'); return; }
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      if(type === 'game') DB.settings.gameIcon = evt.target.result;
+      else DB.settings.checkInIcon = evt.target.result;
+      save(); render();
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+function chooseBgImage(){
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.onchange = function(e){
+    var file = e.target.files[0]; if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      DB.settings.bgImage = evt.target.result;
+      if(DB.settings.bgOpacity === undefined) DB.settings.bgOpacity = 0.3;
+      if(DB.settings.bgBlur === undefined) DB.settings.bgBlur = 0;
+      save(); applyTheme(); render();
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function clearBgImage(){
+  DB.settings.bgImage = '';
+  save(); applyTheme(); render();
+}
+
+function setBgOpacity(val){
+  DB.settings.bgOpacity = parseFloat(val);
+  save(); applyTheme();
+  render();
+}
+
+function setBgBlur(val){
+  DB.settings.bgBlur = parseFloat(val);
+  save(); applyTheme();
+  render();
+}
+function previewBg(){
+  var opSlider = document.getElementById('bgOpacitySlider');
+  var blSlider = document.getElementById('bgBlurSlider');
+  if(!opSlider || !blSlider) return;
+  var op = parseFloat(opSlider.value);
+  var bl = parseFloat(blSlider.value);
+  document.getElementById('opacityLabel').innerText = Math.round(op*100) + '%';
+  document.getElementById('blurLabel').innerText = bl + 'px';
+  // 实时预览，但不保存
+  var bg = document.getElementById('appBg');
+  if(bg && DB.settings.bgImage){
+    bg.style.opacity = op;
+    bg.style.filter = 'blur(' + bl + 'px)';
+  }
+}
+
+function applyBg(){
+  var opSlider = document.getElementById('bgOpacitySlider');
+  var blSlider = document.getElementById('bgBlurSlider');
+  if(!opSlider || !blSlider) return;
+  DB.settings.bgOpacity = parseFloat(opSlider.value);
+  DB.settings.bgBlur = parseFloat(blSlider.value);
+  save();
+  customConfirm('确定应用当前背景设置吗？', function(){
+    applyTheme(); render();
+  });
+}
+
+function resetBgPreview(){
+  var opSlider = document.getElementById('bgOpacitySlider');
+  var blSlider = document.getElementById('bgBlurSlider');
+  if(!opSlider || !blSlider) return;
+  opSlider.value = DB.settings.bgOpacity !== undefined ? DB.settings.bgOpacity : 0.3;
+  blSlider.value = DB.settings.bgBlur || 0;
+  previewBg();
+}
+function editActivityColor(id, isCompleted, field){
+  var a = findActivity(id, isCompleted);
+  if(!a) return;
+  var current = field === 'color' ? (a.color||'#ffffff') : (a.bgColor||'#3b82f6');
+  var title = field === 'color' ? '输入字体颜色（如 #ffffff）' : '输入背景颜色（如 #3b82f6）';
+  customPrompt(title, current, function(val){
+    if(!val) return;
+    a[field] = val;
+    save(); render();
+  });
+}
+function openActivityColorMenu(id, isCompleted){
+  var a = findActivity(id, isCompleted);
+  if(!a) return;
+  closeModal('activityColorMenu');
+  var overlay = document.createElement('div'); overlay.id = 'activityColorMenu';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:12px 12px 0 0;padding:16px;width:100%;max-width:500px;box-sizing:border-box;';
+  var title = document.createElement('div'); title.innerText = '修改颜色'; title.style.cssText = 'font-weight:600;margin-bottom:12px;text-align:center;';
+  box.appendChild(title);
+
+  function makeBtn(text, fn){
+    var b = document.createElement('button');
+    b.innerText = text;
+    b.style.cssText = 'width:100%;padding:12px;margin-bottom:8px;background:#f5f5f7;border:none;border-radius:8px;font-size:15px;';
+    b.onclick = function(){ closeModal('activityColorMenu'); fn(); };
+    return b;
+  }
+  box.appendChild(makeBtn('修改字体颜色', function(){ editActivityColor(id, isCompleted, 'color'); }));
+  box.appendChild(makeBtn('修改背景颜色', function(){ editActivityColor(id, isCompleted, 'bgColor'); }));
+
+  var cancelBtn = document.createElement('button'); cancelBtn.innerText = '取消';
+  cancelBtn.style.cssText = 'width:100%;padding:12px;background:#e5e5ea;border:none;border-radius:8px;font-size:15px;';
+  cancelBtn.onclick = function(){ closeModal('activityColorMenu'); };
+  box.appendChild(cancelBtn);
+
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+</script>
+</body>
+</html>
